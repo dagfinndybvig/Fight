@@ -565,7 +565,7 @@ function bgTheme(stage){
 }
 // Seated sensei: green gi, tricornered Chinese peasant hat
 function drawSensei(sx, sy){
-  const scale = 0.6;
+  const scale = 2.1;
   const s = (v)=> v * scale;
   const gi = "#3a6a3a";
   const giDark = "#2a4a2a";
