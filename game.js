@@ -91,6 +91,73 @@ const Sound = (()=>{
     g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
     o.connect(g); g.connect(ac.destination); o.start(t); o.stop(t+dur);
   }
+
+  // ---- 8-bit Chinese pentatonic music loop ----
+  // D major pentatonic: D E F# A B (Chinese flavor)
+  // Note frequencies: D3=147, E3=165, F#3=185, A3=220, B3=247
+  //                  D4=294, E4=330, F#4=370, A4=440, B4=494
+  const MUSIC = {
+    // melody: [freq, beats] — 16 notes, 1 beat = 0.18s
+    melody: [
+      [330,1],[370,1],[440,2],[330,1],[370,1],
+      [294,2],[330,1],[370,1],[440,1],[494,1],
+      [440,2],[370,1],[330,1],[294,2],[247,1],[220,1],
+    ],
+    // bass: [freq, beats] — follows chord roots
+    bass: [
+      [147,2],[147,2],[165,2],[165,2],
+      [147,2],[165,2],[147,2],[110,2],
+    ],
+    beatLen: 0.18,
+  };
+  let musicTimer = null;
+  let musicPos = 0;
+  let musicBassPos = 0;
+  let melodyBeat = 0;
+  let bassBeat = 0;
+
+  function startMusic(){
+    if(musicTimer) return;
+    ensure(); if(!ac) return;
+    if(ac.state === "suspended") ac.resume();
+    musicPos = 0; musicBassPos = 0; melodyBeat = 0; bassBeat = 0;
+    musicTimer = setInterval(()=>{
+      if(muted || !ac) return;
+      const t = ac.currentTime;
+      // melody
+      if(melodyBeat <= 0){
+        const [freq, beats] = MUSIC.melody[musicPos];
+        const o = ac.createOscillator(), g = ac.createGain();
+        o.type = "square"; o.frequency.setValueAtTime(freq, t);
+        g.gain.setValueAtTime(0, t);
+        g.gain.linearRampToValueAtTime(0.06, t+0.01);
+        g.gain.exponentialRampToValueAtTime(0.001, t + MUSIC.beatLen * beats * 0.9);
+        o.connect(g); g.connect(ac.destination);
+        o.start(t); o.stop(t + MUSIC.beatLen * beats);
+        melodyBeat = beats;
+        musicPos = (musicPos + 1) % MUSIC.melody.length;
+      }
+      melodyBeat -= 1;
+      // bass
+      if(bassBeat <= 0){
+        const [freq, beats] = MUSIC.bass[musicBassPos];
+        const o = ac.createOscillator(), g = ac.createGain();
+        o.type = "triangle"; o.frequency.setValueAtTime(freq, t);
+        g.gain.setValueAtTime(0, t);
+        g.gain.linearRampToValueAtTime(0.08, t+0.01);
+        g.gain.exponentialRampToValueAtTime(0.001, t + MUSIC.beatLen * beats * 0.9);
+        o.connect(g); g.connect(ac.destination);
+        o.start(t); o.stop(t + MUSIC.beatLen * beats);
+        bassBeat = beats;
+        musicBassPos = (musicBassPos + 1) % MUSIC.bass.length;
+      }
+      bassBeat -= 1;
+    }, MUSIC.beatLen * 1000);
+  }
+  function stopMusic(){
+    if(musicTimer){ clearInterval(musicTimer); musicTimer = null; }
+  }
+
   return {
     hit(){ blip(160,0.18,"sawtooth",0.3); blip(90,0.22,"square",0.2); },
     block(){ blip(420,0.08,"square",0.15); },
@@ -98,7 +165,8 @@ const Sound = (()=>{
     point(){ blip(660,0.1,"triangle",0.2); blip(990,0.14,"triangle",0.15); },
     win(){ [523,659,784,1047].forEach((f,i)=>setTimeout(()=>blip(f,0.18,"triangle",0.2),i*110)); },
     lose(){ [330,262,196].forEach((f,i)=>setTimeout(()=>blip(f,0.3,"sawtooth",0.2),i*150)); },
-    toggle(){ muted=!muted; return muted; },
+    toggle(){ muted=!muted; if(muted) stopMusic(); return muted; },
+    startMusic, stopMusic,
   };
 })();
 
@@ -1059,9 +1127,11 @@ function resetBout(){
 }
 function startStage(s){
   stage=s; resetBout(); mode="fighting"; JevAI.reset();
+  Sound.startMusic();
 }
 function startGame(){
   stage=1; resetBout(); mode="title";
+  Sound.stopMusic();
 }
 
 // ---- Bull bonus round ----
@@ -1273,11 +1343,11 @@ function endRound(winner, award, label){
 }
 function nextOrEnd(){
   if(p1.score>=POINTS_TO_WIN){
-    if(stage>=4){ mode="champion"; Sound.win(); }
+    if(stage>=4){ mode="champion"; Sound.stopMusic(); Sound.win(); }
     else if(stage===2 && !autoplay){ startBonus(); }
     else { mode="stageClear"; timer=1.8; msg="STAGE CLEAR"; Sound.win(); }
   } else if(p2.score>=POINTS_TO_WIN){
-    mode="gameover"; Sound.lose();
+    mode="gameover"; Sound.stopMusic(); Sound.lose();
   } else {
     // continue same bout: reset positions/poses, keep scores
     p1.x=300; p1.y=GROUND_Y; p1.vy=0; p1.move=null; p1.busy=false; p1.state="idle"; p1.stun=0; p1.pose=clonePose(POSES.IDLE);

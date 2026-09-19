@@ -314,7 +314,18 @@ WebAudio-synthesized SFX, no audio files:
 | Win | Ascending triangle arpeggio |
 | Lose | Descending sawtooth |
 
-`M` toggles mute.
+### Music
+
+A simple 8-bit repeating loop in D major pentatonic (D E F# A B) — the
+scale that gives Chinese music its characteristic sound. Two tracks:
+
+- **Melody**: 16-note square-wave sequence at 0.18s per beat
+- **Bass**: 8-note triangle-wave chord roots following the melody
+
+Music starts when entering a fight, stops on title, game over, and
+champion screens. Muting (M) stops both music and SFX.
+
+`M` toggles mute (stops music and all SFX).
 
 ## Controls
 
