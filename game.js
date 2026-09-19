@@ -563,6 +563,140 @@ function bgTheme(stage){
   ];
   return themes[(stage-1)%themes.length];
 }
+// Seated sensei: green gi, tricornered Chinese peasant hat
+function drawSensei(sx, sy){
+  const scale = 0.6;
+  const s = (v)=> v * scale;
+  const gi = "#3a6a3a";
+  const giDark = "#2a4a2a";
+  const giDarker = "#1a3a1a";
+  const skin = "#e8b88a";
+  const skinShade = "#c89868";
+  const hatCol = "#6a4a2a";
+  const hatDark = "#4a3a1a";
+  const beltCol = "#886622";
+
+  // shadow
+  ctx.fillStyle = "rgba(0,0,0,0.22)";
+  ctx.beginPath(); ctx.ellipse(sx, sy+4, s(24), s(5), 0, 0, Math.PI*2); ctx.fill();
+
+  // cross-legged seated body (wider at base)
+  // legs crossed — two trapezoid shapes
+  ctx.fillStyle = giDark;
+  ctx.beginPath();
+  ctx.moveTo(sx-s(22), sy);
+  ctx.lineTo(sx+s(22), sy);
+  ctx.lineTo(sx+s(16), sy-s(10));
+  ctx.lineTo(sx-s(16), sy-s(10));
+  ctx.closePath(); ctx.fill();
+
+  // feet peeking out
+  ctx.fillStyle = skinShade;
+  ctx.beginPath(); ctx.ellipse(sx-s(20), sy-s(2), s(6), s(3), 0, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(sx+s(20), sy-s(2), s(6), s(3), 0, 0, Math.PI*2); ctx.fill();
+
+  // torso (green gi jacket — trapezoid, narrow at shoulders, wide at hips)
+  const torsoTop = sy - s(34);
+  const torsoBot = sy - s(12);
+  ctx.fillStyle = gi;
+  ctx.beginPath();
+  ctx.moveTo(sx-s(10), torsoTop);
+  ctx.lineTo(sx+s(10), torsoTop);
+  ctx.lineTo(sx+s(16), torsoBot);
+  ctx.lineTo(sx-s(16), torsoBot);
+  ctx.closePath(); ctx.fill();
+
+  // gi lapel (V-neck)
+  ctx.fillStyle = giDark;
+  ctx.beginPath();
+  ctx.moveTo(sx-s(10), torsoTop);
+  ctx.lineTo(sx-s(2), torsoTop+s(6));
+  ctx.lineTo(sx, torsoTop+s(10));
+  ctx.lineTo(sx+s(2), torsoTop+s(6));
+  ctx.lineTo(sx+s(10), torsoTop);
+  ctx.closePath(); ctx.fill();
+
+  // belt
+  ctx.strokeStyle = beltCol; ctx.lineWidth = s(4); ctx.lineCap = "butt";
+  ctx.beginPath();
+  ctx.moveTo(sx-s(15), torsoBot-s(2));
+  ctx.lineTo(sx+s(15), torsoBot-s(2));
+  ctx.stroke();
+  // belt knot
+  ctx.fillStyle = beltCol;
+  ctx.beginPath(); ctx.arc(sx+s(1), torsoBot-s(2), s(3), 0, Math.PI*2); ctx.fill();
+  // belt tails
+  ctx.strokeStyle = beltCol; ctx.lineWidth = s(2.5); ctx.lineCap = "round";
+  ctx.beginPath();
+  ctx.moveTo(sx+s(1), torsoBot-s(1));
+  ctx.lineTo(sx+s(3), torsoBot+s(4));
+  ctx.moveTo(sx+s(1), torsoBot-s(1));
+  ctx.lineTo(sx-s(2), torsoBot+s(4));
+  ctx.stroke();
+
+  // arms resting on knees (sleeves)
+  ctx.fillStyle = gi;
+  // left arm
+  ctx.beginPath();
+  ctx.moveTo(sx-s(10), torsoTop+s(2));
+  ctx.lineTo(sx-s(22), sy-s(6));
+  ctx.lineTo(sx-s(18), sy-s(4));
+  ctx.lineTo(sx-s(8), torsoTop+s(4));
+  ctx.closePath(); ctx.fill();
+  // right arm
+  ctx.beginPath();
+  ctx.moveTo(sx+s(10), torsoTop+s(2));
+  ctx.lineTo(sx+s(22), sy-s(6));
+  ctx.lineTo(sx+s(18), sy-s(4));
+  ctx.lineTo(sx+s(8), torsoTop+s(4));
+  ctx.closePath(); ctx.fill();
+  // hands on knees
+  ctx.fillStyle = skin;
+  ctx.beginPath(); ctx.arc(sx-s(21), sy-s(6), s(3.5), 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(sx+s(21), sy-s(6), s(3.5), 0, Math.PI*2); ctx.fill();
+
+  // neck
+  ctx.fillStyle = skin;
+  ctx.beginPath(); ctx.arc(sx, torsoTop-s(2), s(3), 0, Math.PI*2); ctx.fill();
+
+  // head
+  const headY = torsoTop - s(8);
+  ctx.fillStyle = skin;
+  ctx.beginPath(); ctx.arc(sx, headY, s(7), 0, Math.PI*2); ctx.fill();
+
+  // hair (short, dark)
+  ctx.fillStyle = "#2a1a0a";
+  ctx.beginPath(); ctx.arc(sx, headY-s(1), s(7.5), Math.PI*1.1, Math.PI*1.9); ctx.fill();
+
+  // eyes — calm, closed (meditating sensei)
+  ctx.strokeStyle = "#222"; ctx.lineWidth = s(1.2); ctx.lineCap = "round";
+  ctx.beginPath();
+  ctx.moveTo(sx-s(3), headY-s(1)); ctx.lineTo(sx-s(1), headY-s(1));
+  ctx.moveTo(sx+s(1), headY-s(1)); ctx.lineTo(sx+s(3), headY-s(1));
+  ctx.stroke();
+
+  // tricornered Chinese peasant hat (rice hat / douli)
+  // wide conical hat with a flat-ish top and three visible corners
+  ctx.fillStyle = hatCol;
+  ctx.beginPath();
+  ctx.moveTo(sx-s(16), headY-s(4));
+  ctx.quadraticCurveTo(sx, headY-s(14), sx+s(16), headY-s(4));
+  ctx.lineTo(sx+s(12), headY-s(2));
+  ctx.quadraticCurveTo(sx, headY-s(8), sx-s(12), headY-s(2));
+  ctx.closePath(); ctx.fill();
+  // hat brim shadow
+  ctx.fillStyle = hatDark;
+  ctx.beginPath();
+  ctx.moveTo(sx-s(16), headY-s(4));
+  ctx.quadraticCurveTo(sx, headY-s(12), sx+s(16), headY-s(4));
+  ctx.lineTo(sx+s(14), headY-s(3));
+  ctx.quadraticCurveTo(sx, headY-s(10), sx-s(14), headY-s(3));
+  ctx.closePath(); ctx.fill();
+  // hat top knob
+  ctx.fillStyle = hatDark;
+  ctx.beginPath(); ctx.arc(sx, headY-s(11), s(1.5), 0, Math.PI*2); ctx.fill();
+}
+
 function drawBackground(stage){
   const t=bgTheme(stage);
   const g=ctx.createLinearGradient(0,0,0,GROUND_Y);
@@ -594,11 +728,8 @@ function drawBackground(stage){
     }
   }
   ctx.restore();
-  // sensei watching (small seated silhouette, nod to the original)
-  ctx.fillStyle="rgba(0,0,0,0.35)";
-  const sx=60, sy=GROUND_Y-6;
-  ctx.beginPath(); ctx.arc(sx,sy-30,12,0,Math.PI*2); ctx.fill(); // head
-  ctx.beginPath(); ctx.moveTo(sx-18,sy); ctx.quadraticCurveTo(sx,sy-40,sx+18,sy); ctx.fill(); // body
+  // sensei watching — seated, green gi, tricornered Chinese peasant hat
+  drawSensei(60, GROUND_Y-6);
   // ground
   ctx.fillStyle=t.ground; ctx.fillRect(0,GROUND_Y,W,H-GROUND_Y);
   ctx.fillStyle=t.accent; ctx.fillRect(0,GROUND_Y,W,4);
