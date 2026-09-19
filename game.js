@@ -198,7 +198,7 @@ const JevAI = (()=>{
       const oppStance = opp.state + (opp.crouching ? "(crouching)" : "") + (opp.y<GROUND_Y-1 ? "(airborne)" : "");
       const aiPos = ai.x < 150 ? "I am near my left wall" : ai.x > 810 ? "I am near my right wall" : "I am in the center of the arena";
       const oppPos = opp.x < 150 ? "opponent is near the left wall" : opp.x > 810 ? "opponent is near the right wall" : "opponent is in the center";
-      const range = d < 50 ? "close range — use elbows, low punches, or sweeps" : d < 70 ? "punch range — use punches or step in for elbow" : d < 90 ? "kick range — use high kicks, roundhouses, or low kicks" : "far range — approach or jump in with a jump kick";
+      const range = d < 50 ? "close range — use elbows, low punches, or sweeps" : d < 70 ? "punch range — use punches or step in for elbow" : d < 90 ? "kick range — use high kicks, roundhouses, or low kicks" : "far range — approach quickly, do not jump";
       const recent = lastChoice ? "My last move was " + lastChoice + "." : "I have not acted yet.";
       return [
         "Karate bout. Yin-yang scoring: clean hit = ippon (1pt), glancing = waza-ari (0.5pt). First to 2 points wins.",
@@ -314,12 +314,12 @@ const JevAI = (()=>{
   // p2 instance (AI opponent) and p1 instance (autoplay)
   // Each fighter has two styles and randomly switches between them.
   const p2inst = create("p2", [
-    "My fighting style: patient counter-fighter. I wait for the opponent to attack, then block and counter with a sweep or elbow. I use approach and retreat to control distance, stepping in only when I see an opening. At mid range I use high kicks and low kicks. I block often. When in range I attack — I do not just walk. If near a wall I step forward. I avoid repeating the same move twice.",
-    "My fighting style: aggressive kickboxer. I press forward constantly and throw roundhouse kicks at mid range. I use jump kicks and jump roundhouses to close distance. At close range I throw elbows and low punches. I rarely block — I prefer to attack first. When in striking range I always attack with a kick or punch. If the opponent is near a wall I press with roundhouses and jump attacks. I avoid repeating the same move twice.",
+    "My fighting style: patient counter-fighter. I stay close and wait for the opponent to attack, then block and counter with a sweep or elbow. I use short steps to stay just within striking range. At mid range I use high kicks and low kicks. I block often. When in range I attack — I do not just walk. If near a wall I step forward. I avoid repeating the same move twice. I do not jump unless the opponent is far away.",
+    "My fighting style: aggressive kickboxer. I press forward and throw roundhouse kicks at mid range. I stay close to the opponent — within 60 pixels. At close range I throw elbows and low punches. I rarely block — I prefer to attack first. When in striking range I always attack with a kick or punch. If the opponent is near a wall I press with roundhouses. I avoid repeating the same move twice. I only jump occasionally, not constantly.",
   ]);
   const p1inst = create("p1", [
-    "My fighting style: aggressive swarmer. I close distance quickly and throw elbows and low punches at close range. At mid range I use high kicks and roundhouses. I press forward in a rhythm — step in, attack, step out, press again. I block when the opponent counters, then resume attacking. When in striking range I always attack — never just walk forward. If the opponent retreats I pursue. I avoid repeating the same move twice.",
-    "My fighting style: aerial specialist. I use jump kicks and jump roundhouses constantly to attack from unexpected angles. I jump in, attack, then jump back out. At mid range I throw roundhouses. At close range I use sweeps and elbows. I move forward and backward with jumps rather than walking. When in striking range I always attack. If near a wall I jump forward to escape. I avoid repeating the same move twice.",
+    "My fighting style: aggressive swarmer. I close distance quickly and stay close — within 50 pixels of the opponent. I throw elbows and low punches at close range. At mid range I use high kicks and roundhouses. I press forward in a rhythm — step in, attack, step out, press again. I block when the opponent counters, then resume attacking. When in striking range I always attack — never just walk forward. If the opponent retreats I pursue with quick steps. I avoid repeating the same move twice. I do not jump unless the opponent is far away.",
+    "My fighting style: counter-puncher. I stay at punch range and use quick punches and low kicks. I step in to strike, then step back to avoid the counter. At close range I use elbows. I block frequently and counter immediately. I throw a jump kick occasionally to surprise the opponent but mostly stay grounded. When in striking range I always attack. If near a wall I step forward. I avoid repeating the same move twice.",
   ]);
 
   return {
