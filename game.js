@@ -286,11 +286,30 @@ const JevAI = (()=>{
           useFallback = true;
           addLog({ t: Date.now(), id, stage, ok: false, reason: "low_conf", choice: res.choice, confidence: res.confidence, state: res.state, probabilities: res.probabilities });
         } else {
+          // Sample from Jev's probability distribution with a temperature
+          // for natural variety. Temperature >1 flattens the distribution,
+          // making lower-probability moves more likely. We never repeat the
+          // last move -- if sampled, we resample from the rest.
+          let picked = res.choice;
+          if(res.probabilities){
+            const temp = 1.6 + Math.random() * 0.8;  // 1.6-2.4
+            const entries = Object.entries(res.probabilities)
+              .filter(([k]) => k !== lastChoice);
+            if(entries.length > 0){
+              const weights = entries.map(([,v]) => Math.pow(v, 1 / temp));
+              const sum = weights.reduce((a,b)=>a+b, 0);
+              let r = Math.random() * sum;
+              for(let i = 0; i < entries.length; i++){
+                r -= weights[i];
+                if(r <= 0){ picked = entries[i][0]; break; }
+              }
+            }
+          }
           status = "active";
-          statusDetail = res.choice + " (" + res.confidence.toFixed(2) + ")";
-          lastChoice = res.choice;
+          statusDetail = picked + " (" + res.confidence.toFixed(2) + ")";
+          lastChoice = picked;
           useFallback = false;
-          addLog({ t: Date.now(), id, stage, ok: true, choice: res.choice, confidence: res.confidence, state: res.state, probabilities: res.probabilities });
+          addLog({ t: Date.now(), id, stage, ok: true, choice: picked, jevChoice: res.choice, confidence: res.confidence, state: res.state, probabilities: res.probabilities });
         }
       }).catch(err=>{
         inflight = false;
