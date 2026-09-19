@@ -150,7 +150,7 @@ const JevAI = (()=>{
   };
 
   // ---- Factory: each instance has independent polling state ----
-  function create(id){
+  function create(id, style){
     let pollTimer = 0;
     let inflight = false;
     let lastChoice = null;
@@ -198,6 +198,7 @@ const JevAI = (()=>{
         "My stance: " + aiStance + ". Opponent stance: " + oppStance + ".",
         "Opponent is " + (opp.state==="attack" ? "attacking" : "not attacking") + ".",
         "I am " + (ai.busy ? "busy" : "free to act") + ".",
+        style || "",
       ].join(" ");
     }
 
@@ -289,8 +290,9 @@ const JevAI = (()=>{
   }
 
   // p2 instance (AI opponent) and p1 instance (autoplay)
-  const p2inst = create("p2");
-  const p1inst = create("p1");
+  // Each gets a distinct tactical personality so they fight differently.
+  const p2inst = create("p2", "My fighting style: patient and defensive. I wait for the opponent to overcommit, then counter-attack. I favor blocks, sweeps, and back kicks. I use roundhouse only when the opponent is recovering. I retreat to create space rather than charging in. I mix up high and low attacks to stay unpredictable.");
+  const p1inst = create("p1", "My fighting style: aggressive and proactive. I close distance quickly and press the attack. I favor elbows at close range, high kicks at mid range, and jump attacks to close distance. I block only when the opponent is clearly attacking. I rarely retreat — I would rather sidestep with a back kick than give ground.");
 
   return {
     ...p2inst,           // primary instance (p2) — backward compatible
