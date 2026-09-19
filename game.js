@@ -3,7 +3,7 @@
    The Way of the Exploding Fist inspired clone
    Vanilla JS, canvas-drawn, no external assets.
    One-on-one karate. Yin-yang scoring (ippon / waza-ari).
-   Player vs machine (simple AI, harder per stage).
+   Player vs machine.
    ============================================================ */
 
 const canvas = document.getElementById("game");
