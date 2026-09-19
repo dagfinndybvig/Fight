@@ -45,7 +45,7 @@ are drawn on canvas; sound is synthesized with WebAudio).
 - [x] 8 moves (high/low punch & kick, roundhouse, jump kick, jump punch, block)
 - [x] 4 stages with themed backgrounds and scaling AI
 - [x] Jev integration (TypeSafe System One model) with local-AI fallback
-- [ ] Bull bonus round (Mas Oyama single-strike)
+- [x] Bull bonus round (Mas Oyama single-strike) after stage 2
 
 ## AI: Jev integration
 

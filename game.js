@@ -737,6 +737,7 @@ function aiControl(f, opp, stage, dt){
 // Game state machine
 // ============================================================
 let p1, p2, stage, mode, timer, msg, msgSub, pause;
+let bull = null;   // bonus round bull object
 function resetBout(){
   p1 = makeFighter(300, 1, false); p1.name="YOU";
   p2 = makeFighter(660,-1, true);  p2.name="AI";
@@ -747,6 +748,171 @@ function startStage(s){
 }
 function startGame(){
   stage=1; resetBout(); mode="title";
+}
+
+// ---- Bull bonus round ----
+function startBonus(){
+  // player stands center-left, no opponent
+  p1.x = 300; p1.y = GROUND_Y; p1.vy = 0; p1.move = null; p1.busy = false;
+  p1.state = "idle"; p1.stun = 0; p1.pose = clonePose(POSES.IDLE);
+  p1.facing = 1;
+  bull = {
+    x: W + 80, y: GROUND_Y,
+    vx: -340,
+    state: "charging",       // charging | hit | missed
+    t: 0,
+    scored: false,
+  };
+  mode = "bonusIntro";
+  timer = 2.0;
+  msg = "BONUS ROUND";
+  msgSub = "Knock out the bull with one strike!";
+}
+function updateBonus(dt){
+  if(mode === "bonusIntro"){
+    timer -= dt;
+    if(timer <= 0){ mode = "bonusFight"; timer = 0; msg = ""; msgSub = ""; }
+    return;
+  }
+  if(mode === "bonusResult"){
+    timer -= dt;
+    if(timer <= 0){
+      bull = null;
+      startStage(stage + 1);
+    }
+    return;
+  }
+  if(mode !== "bonusFight") return;
+
+  // player can act (movement + attacks, no opponent)
+  updateFighter(p1, {x: bull.x, y: bull.y}, dt, null);
+  // keep player facing right (bull comes from right)
+  if(!p1.busy) p1.facing = 1;
+  blendPose(p1, poseFor(p1), dt);
+
+  // bull physics
+  bull.x += bull.vx * dt;
+  bull.t += dt;
+
+  // check player attack vs bull
+  if(p1.move && p1.move.phase === "active" && !p1.move.spent){
+    const m = MOVES[p1.move.key];
+    const airOff = GROUND_Y - p1.y;
+    const y0 = m.hb[0] - airOff, y1 = m.hb[1] - airOff;
+    // bull body box: roughly ground level to 70px up
+    const by0 = bull.y - 70, by1 = bull.y;
+    const fdist = p1.facing * (bull.x - p1.x);
+    if(fdist >= 30 && fdist <= m.reach + 20 && y0 < by1 && y1 > by0){
+      p1.move.spent = true;
+      bull.state = "hit";
+      bull.vx = -60; // stagger back
+      bull.scored = true;
+      mode = "bonusResult";
+      timer = 2.5;
+      msg = "BULL DOWN!";
+      msgSub = "Mas Oyama would be proud. Bonus yin-yang awarded.";
+      p1.score += 0.5; // bonus half-point toward next bout
+      Sound.win();
+      return;
+    }
+  }
+
+  // bull reaches player without being hit
+  const dx = Math.abs(bull.x - p1.x);
+  if(dx < 30 && !bull.scored){
+    bull.state = "missed";
+    bull.vx = -80;
+    mode = "bonusResult";
+    timer = 2.0;
+    msg = "TRAMPLED!";
+    msgSub = "The bull got past. No bonus.";
+    p1.state = "hit"; p1.stun = 0.5;
+    Sound.lose();
+    return;
+  }
+
+  // bull exits left side
+  if(bull.x < -80){
+    bull.state = "missed";
+    mode = "bonusResult";
+    timer = 1.5;
+    msg = "MISSED!";
+    msgSub = "The bull escaped. No bonus.";
+    Sound.lose();
+    return;
+  }
+}
+
+function drawBull(){
+  if(!bull) return;
+  const b = bull;
+  const bx = b.x, by = b.y;
+  const charge = b.state === "charging" ? 1 : 0;
+  const shake = charge ? Math.sin(b.t * 40) * 2 : 0;
+
+  // shadow
+  ctx.fillStyle = "rgba(0,0,0,0.25)";
+  ctx.beginPath(); ctx.ellipse(bx, by + 4, 50, 8, 0, 0, Math.PI * 2); ctx.fill();
+
+  // body (facing left, charging toward player)
+  ctx.save();
+  ctx.translate(bx + shake, by);
+  ctx.scale(-1, 1);   // flip so head/horns face left (direction of charge)
+
+  // legs (animated gallop)
+  const legPhase = Math.sin(b.t * 18);
+  ctx.strokeStyle = "#3a2a1a"; ctx.lineWidth = 10; ctx.lineCap = "round";
+  // back legs
+  ctx.beginPath(); ctx.moveTo(-15, -30); ctx.lineTo(-15 + legPhase * 6, -2); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(-8, -30); ctx.lineTo(-8 - legPhase * 6, -2); ctx.stroke();
+  // front legs
+  ctx.beginPath(); ctx.moveTo(28, -30); ctx.lineTo(28 - legPhase * 6, -2); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(35, -30); ctx.lineTo(35 + legPhase * 6, -2); ctx.stroke();
+
+  // body
+  ctx.fillStyle = "#4a3a2a";
+  ctx.beginPath(); ctx.ellipse(10, -35, 38, 24, 0, 0, Math.PI * 2); ctx.fill();
+  // back hump
+  ctx.beginPath(); ctx.ellipse(-10, -50, 16, 12, 0, 0, Math.PI * 2); ctx.fill();
+
+  // head + horns (facing left)
+  ctx.fillStyle = "#3a2a1a";
+  ctx.beginPath(); ctx.ellipse(42, -48, 16, 14, 0, 0, Math.PI * 2); ctx.fill();
+  // snout
+  ctx.beginPath(); ctx.ellipse(54, -42, 8, 6, 0, 0, Math.PI * 2); ctx.fill();
+  // nostril
+  ctx.fillStyle = "#1a0a00";
+  ctx.beginPath(); ctx.arc(58, -42, 1.5, 0, Math.PI * 2); ctx.fill();
+  // eye (angry)
+  ctx.fillStyle = "#e22";
+  ctx.beginPath(); ctx.arc(40, -52, 2, 0, Math.PI * 2); ctx.fill();
+  // horns
+  ctx.strokeStyle = "#d8c8a0"; ctx.lineWidth = 5; ctx.lineCap = "round";
+  ctx.beginPath(); ctx.moveTo(38, -60); ctx.lineTo(28, -72); ctx.lineTo(22, -68); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(46, -60); ctx.lineTo(52, -74); ctx.lineTo(58, -70); ctx.stroke();
+
+  // tail
+  ctx.strokeStyle = "#3a2a1a"; ctx.lineWidth = 4;
+  ctx.beginPath(); ctx.moveTo(-28, -38); ctx.lineTo(-40 + Math.sin(b.t*15)*4, -28); ctx.stroke();
+
+  // steam/snort puffs when charging
+  if(charge){
+    ctx.fillStyle = "rgba(255,255,255,0.4)";
+    for(let i=0;i<3;i++){
+      const px = 62 + i*8 + Math.sin(b.t*10+i)*3;
+      const py = -42 + Math.sin(b.t*8+i)*3;
+      ctx.beginPath(); ctx.arc(px, py, 3 - i*0.5, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+
+  if(b.state === "hit"){
+    // dazed stars
+    ctx.fillStyle = "#ffd17a";
+    ctx.font = "16px monospace"; ctx.textAlign = "center";
+    ctx.fillText("* * *", 10, -78);
+  }
+
+  ctx.restore();
 }
 startGame();
 
@@ -794,6 +960,7 @@ function endRound(winner, award, label){
 function nextOrEnd(){
   if(p1.score>=POINTS_TO_WIN){
     if(stage>=4){ mode="champion"; Sound.win(); }
+    else if(stage===2){ startBonus(); }
     else { mode="stageClear"; timer=1.8; msg="STAGE CLEAR"; Sound.win(); }
   } else if(p2.score>=POINTS_TO_WIN){
     mode="gameover"; Sound.lose();
@@ -848,6 +1015,7 @@ function update(dt){
   if(mode==="title"||mode==="gameover"||mode==="champion") return;
   if(mode==="stageClear"){ timer-=dt; if(timer<=0) startStage(stage+1); return; }
   if(mode==="roundPause"){ timer-=dt; if(timer<=0) nextOrEnd(); return; }
+  if(mode==="bonusIntro"||mode==="bonusFight"||mode==="bonusResult"){ updateBonus(dt); return; }
   if(mode!=="fighting") return;
 
   // AI control: Jev if enabled, otherwise local heuristic
@@ -887,9 +1055,16 @@ function checkHit(atk,def){
 
 function draw(){
   drawBackground(stage);
-  // fighters (draw back one first by x? keep simple: p2 then p1)
-  drawFighter(p1); drawFighter(p2);
-  drawHUD(p1,p2,stage);
+  if(mode==="bonusIntro"||mode==="bonusFight"||mode==="bonusResult"){
+    drawFighter(p1);
+    drawBull();
+    drawHUD(p1, {score:0, isAI:true}, stage);
+    if(mode==="bonusIntro") drawCenter(msg, msgSub, "#ffd17a");
+    else if(mode==="bonusResult") drawCenter(msg, msgSub, bull && bull.scored ? "#4f4" : "#f66");
+  } else {
+    drawFighter(p1); drawFighter(p2);
+    drawHUD(p1,p2,stage);
+  }
 
   if(mode==="title") drawTitle();
   else if(mode==="gameover") drawCenter("GAME OVER","Press Enter to fight again", "#d04a4a");
