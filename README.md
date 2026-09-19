@@ -8,15 +8,9 @@ Starting with simple AI, but the aim is to use Jev.
 ## Gameplay
 
 Inspired by *The Way of the Exploding Fist* (1985): a one-on-one karate
-bout scored the traditional *shobu nihon kumite* way. There is no health bar.
-Any clean connecting technique ends the round:
-
-- A well-timed, decisive hit scores a full yin-yang (**ippon**, 1 point).
-- A glancing hit or a trade scores half a yin-yang (**waza-ari**, 0.5 points).
-- A blocked hit does not connect — the round continues.
-
-First to **two full yin-yangs** wins the bout and advances to a harder stage
-(faster, more defensive AI). Win all four stages to become the master.
+bout with yin-yang scoring. No health bar — a clean hit ends the round.
+First to two full yin-yangs wins the bout and advances to a harder stage.
+Win all four stages to become the master.
 
 ### Controls
 
@@ -29,37 +23,32 @@ First to **two full yin-yangs** wins the bout and advances to a harder stage
 | Kick | G (or K) |
 | Block | hold *back* (away) **+ Down** |
 
-Modifiers: hold **Down** for low attacks; **Kick + toward** for a roundhouse;
-**Kick in the air** for a jump kick; **Punch in the air** for a jump punch.
-**Punch + toward** for an elbow strike; **Kick + down + back** for a sweep;
-**Kick + back** for a back kick; **Kick + toward in the air** for a jump roundhouse.
-Sweep and elbow always score ippon if they connect, but are slow or short-range.
-`M` mutes sound, `P` pauses.
+11 moves total — punch/kick variants, elbow, sweep, roundhouse, back kick,
+jump attacks. See [DESIGN.md](DESIGN.md) for the full move list and mechanics.
+
+`M` mutes sound, `P` pauses, `J` sets the Jev API key.
 
 ### Running
 
 Static files only — open `index.html` directly, or serve the folder and deploy
-to GitHub Pages. No build step, no external assets (fighters and backgrounds
-are drawn on canvas; sound is synthesized with WebAudio).
+to GitHub Pages. No build step, no external assets.
+
+## AI
+
+The machine player uses a local heuristic AI by default. Press **J** to
+enter a [Jev](https://www.typesafe.ai) API key (TypeSafe System One model)
+for AI-driven decisions. Falls back to local AI when no key, on network
+error, or low confidence. See [DESIGN.md](DESIGN.md) for details.
 
 ## Roadmap
 
 - [x] Core bout loop with yin-yang scoring
-- [x] 8 moves (high/low punch & kick, roundhouse, jump kick, jump punch, block)
+- [x] 11 moves with high/low/special variants
 - [x] 4 stages with themed backgrounds and scaling AI
-- [x] Jev integration (TypeSafe System One model) with local-AI fallback
-- [x] Bull bonus round (Mas Oyama single-strike) after stage 2
+- [x] Bull bonus round after stage 2
+- [x] Jev integration with local-AI fallback
 
-## AI: Jev integration
+## Design
 
-The machine player can be driven by [Jev](https://www.typesafe.ai), TypeSafe's
-System One model — a typed decision model that returns a probability-weighted
-choice rather than generating text. Press **J** in-game to enter your TypeSafe
-API key (stored in localStorage). When a key is present, the game polls Jev
-every ~450ms with a compact fight-state description and a `Choice` question
-over the fighter's move set. The response sets the AI's current intent until
-the next poll.
-
-Fallback is always visible, never silent: no key, a network error, or
-confidence below 0.3 falls back to the local heuristic AI, and the HUD shows
-which mode is active.
+Detailed design notes — scoring, move tables, rendering, AI architecture,
+and constants — are in [DESIGN.md](DESIGN.md).
