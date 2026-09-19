@@ -166,6 +166,7 @@ const Sound = (()=>{
     win(){ [523,659,784,1047].forEach((f,i)=>setTimeout(()=>blip(f,0.18,"triangle",0.2),i*110)); },
     lose(){ [330,262,196].forEach((f,i)=>setTimeout(()=>blip(f,0.3,"sawtooth",0.2),i*150)); },
     toggle(){ muted=!muted; if(muted) stopMusic(); return muted; },
+    ensure(){ ensure(); if(ac && ac.state==="suspended") ac.resume(); },
     startMusic, stopMusic,
   };
 })();
@@ -446,6 +447,7 @@ function kPress(action){ return KEYMAP[action].some(c=>Pressed[c]); }
 addEventListener("keydown", e=>{
   if(!Keys[e.code]) Pressed[e.code]=true;
   Keys[e.code]=true;
+  Sound.ensure();
   if(["ArrowLeft","ArrowRight","ArrowUp","ArrowDown","Space"].includes(e.code)) e.preventDefault();
   if(e.code==="KeyM") Sound.toggle();
   if(e.code==="KeyL") showJevLog = !showJevLog;
