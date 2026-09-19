@@ -150,13 +150,19 @@ const JevAI = (()=>{
   };
 
   // ---- Factory: each instance has independent polling state ----
-  function create(id, style){
+  // styles is an array of style strings; the fighter randomly switches
+  // between them every few seconds for variety.
+  function create(id, styles){
     let pollTimer = 0;
     let inflight = false;
     let lastChoice = null;
     let useFallback = false;
     let status = "idle";
     let statusDetail = "";
+    let styleIdx = 0;
+    let styleTimer = 0;
+    let styleSwapIn = 2 + Math.random() * 3;  // 2-5 seconds before first switch
+    function activeStyle(){ return (styles && styles[styleIdx]) || ""; }
 
     // map Jev choice -> button-combo. Uses abstract toward/away flags
     // instead of pre-computing left/right, so updateFighter can resolve
@@ -204,7 +210,7 @@ const JevAI = (()=>{
         "Opponent is " + (opp.state==="attack" ? "attacking — block or counter now" : "not attacking — this is my chance to strike") + ".",
         "I am " + (ai.busy ? "busy" : "free to act") + ".",
         recent,
-        style || "",
+        activeStyle() || "",
       ].join(" ");
     }
 
@@ -250,6 +256,16 @@ const JevAI = (()=>{
       if(!enabled || !apiKey){
         return fallbackFn();
       }
+      // style switching: randomly change fighting style every few seconds
+      if(styles && styles.length > 1){
+        styleTimer += dt;
+        if(styleTimer >= styleSwapIn){
+          styleTimer = 0;
+          styleIdx = (styleIdx + 1) % styles.length;
+          styleSwapIn = 3 + Math.random() * 4;  // 3-7 seconds
+          lastChoice = null;  // force fresh decision with new style
+        }
+      }
       pollTimer += dt;
       if(inflight) {
         return useFallback ? fallbackFn()
@@ -291,14 +307,20 @@ const JevAI = (()=>{
     return {
       tick,
       getStatus(){ return { status, detail: statusDetail }; },
-      reset(){ pollTimer=0; inflight=false; lastChoice=null; useFallback=false; status="idle"; statusDetail=""; },
+      reset(){ pollTimer=0; inflight=false; lastChoice=null; useFallback=false; status="idle"; statusDetail=""; styleIdx=0; styleTimer=0; styleSwapIn=2+Math.random()*3; },
     };
   }
 
   // p2 instance (AI opponent) and p1 instance (autoplay)
-  // Each gets a distinct tactical personality so they fight differently.
-  const p2inst = create("p2", "My fighting style: I am a flashy counter-fighter who loves spectacular moves. I use roundhouse kicks constantly at mid range — it is my signature. I frequently jump in with jump kicks and jump roundhouses to close distance dramatically. I alternate approach and retreat to control range, but I never repeat the same move twice in a row — if I just approached, next I retreat or attack. When the opponent attacks I block, then counter with a sweep or elbow. If near a wall I step forward and fight out. When in range I attack — I do not just walk. I avoid repeating approach or retreat more than once.");
-  const p1inst = create("p1", "My fighting style: I am an aggressive aerial fighter who loves jumping attacks and roundhouses. I use jump kicks and jump roundhouses frequently to surprise the opponent. At mid range I throw roundhouses — it is my favorite weapon. At close range I use elbows and low punches. I never repeat the same move twice — if I just approached, next I throw a kick or jump. I press forward in a rhythm but mix in jumps and roundhouses constantly. When in striking range I always attack with a kick or punch, never just walk. If the opponent is near a wall I press with jump attacks and roundhouses.");
+  // Each fighter has two styles and randomly switches between them.
+  const p2inst = create("p2", [
+    "My fighting style: patient counter-fighter. I wait for the opponent to attack, then block and counter with a sweep or elbow. I use approach and retreat to control distance, stepping in only when I see an opening. At mid range I use high kicks and low kicks. I block often. When in range I attack — I do not just walk. If near a wall I step forward. I avoid repeating the same move twice.",
+    "My fighting style: aggressive kickboxer. I press forward constantly and throw roundhouse kicks at mid range. I use jump kicks and jump roundhouses to close distance. At close range I throw elbows and low punches. I rarely block — I prefer to attack first. When in striking range I always attack with a kick or punch. If the opponent is near a wall I press with roundhouses and jump attacks. I avoid repeating the same move twice.",
+  ]);
+  const p1inst = create("p1", [
+    "My fighting style: aggressive swarmer. I close distance quickly and throw elbows and low punches at close range. At mid range I use high kicks and roundhouses. I press forward in a rhythm — step in, attack, step out, press again. I block when the opponent counters, then resume attacking. When in striking range I always attack — never just walk forward. If the opponent retreats I pursue. I avoid repeating the same move twice.",
+    "My fighting style: aerial specialist. I use jump kicks and jump roundhouses constantly to attack from unexpected angles. I jump in, attack, then jump back out. At mid range I throw roundhouses. At close range I use sweeps and elbows. I move forward and backward with jumps rather than walking. When in striking range I always attack. If near a wall I jump forward to escape. I avoid repeating the same move twice.",
+  ]);
 
   return {
     ...p2inst,           // primary instance (p2) — backward compatible
