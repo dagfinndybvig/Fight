@@ -154,28 +154,28 @@ const JevAI = (()=>{
     jump_round:  "Jump toward the opponent and roundhouse kick in the air",
     wait:        "Hold position and observe",
   };
-  // map Jev choice -> button-combo. Recomputed each frame so jump
-  // attacks can launch first, then fire once airborne.
+  // map Jev choice -> button-combo. Uses abstract toward/away flags
+  // instead of pre-computing left/right, so updateFighter can resolve
+  // the direction from the current facing (which may change between
+  // the tick call and the fighter update).
   function choiceToAction(choice, ai, opp){
-    const toward = opp.x >= ai.x ? "right" : "left";
-    const away = toward === "right" ? "left" : "right";
-    const o = { left:false,right:false,up:false,down:false,punch:false,kick:false };
+    const o = { left:false,right:false,up:false,down:false,punch:false,kick:false,toward:false,away:false };
     const airborne = ai.y < GROUND_Y - 1;
     switch(choice){
-      case "approach":   o[toward]=true; break;
-      case "retreat":    o[away]=true; break;
-      case "block":      o[away]=true; o.down=true; break;
+      case "approach":   o.toward=true; break;
+      case "retreat":    o.away=true; break;
+      case "block":      o.away=true; o.down=true; break;
       case "jump":       o.up=true; break;
       case "punch_high": o.punch=true; break;
       case "punch_low":  o.down=true; o.punch=true; break;
-      case "elbow":      o[toward]=true; o.punch=true; break;
+      case "elbow":      o.toward=true; o.punch=true; break;
       case "kick_high":  o.kick=true; break;
       case "kick_low":   o.down=true; o.kick=true; break;
-      case "sweep":      o[away]=true; o.down=true; o.kick=true; break;
-      case "roundhouse": o[toward]=true; o.kick=true; break;
-      case "back_kick":  o[away]=true; o.kick=true; break;
+      case "sweep":      o.away=true; o.down=true; o.kick=true; break;
+      case "roundhouse": o.toward=true; o.kick=true; break;
+      case "back_kick":  o.away=true; o.kick=true; break;
       case "jump_kick":  airborne ? o.kick=true : o.up=true; break;
-      case "jump_round": airborne ? (o.kick=true, o[toward]=true) : o.up=true; break;
+      case "jump_round": airborne ? (o.kick=true, o.toward=true) : o.up=true; break;
       case "wait":       break;
       default:           break;
     }
@@ -372,7 +372,7 @@ function updateFighter(f, opp, dt, aiCtl){
 
   // ---- movement (player) ----
   let ml=0, mr=0, up=false, down=false, punch=false, kick=false;
-  if(aiCtl){ ml=aiCtl.left; mr=aiCtl.right; up=aiCtl.up; down=aiCtl.down; punch=aiCtl.punch; kick=aiCtl.kick; }
+  if(aiCtl){ ml=aiCtl.left; mr=aiCtl.right; up=aiCtl.up; down=aiCtl.down; punch=aiCtl.punch; kick=aiCtl.kick; if(aiCtl.toward){ if(f.facing>0) mr=true; else ml=true; } if(aiCtl.away){ if(f.facing>0) ml=true; else mr=true; } }
   else if(!f.busy && f.stun<=0){
     ml=k("left"); mr=k("right"); up=k("up"); down=k("down"); punch=k("punch"); kick=k("kick");
   }
@@ -774,7 +774,6 @@ function aiControl(f, opp, stage, dt){
   const close = d < 60;
   const blockChance = clamp(0.18 + stage*0.12, 0.18, 0.6);
   const aggro = clamp(0.3 + stage*0.15, 0.3, 0.95);
-  const toward = opp.x >= f.x ? "right" : "left";
   const away = toward==="right" ? "left":"right";
 
   if(oppAttacking && inRange && Math.random()<blockChance){
