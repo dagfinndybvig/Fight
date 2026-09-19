@@ -1,6 +1,6 @@
 "use strict";
 /* ============================================================
-   The Way of the Exploding Fist — inspired clone
+   The Way of the Exploding Fight — inspired clone
    Vanilla JS, canvas-drawn, no external assets.
    One-on-one karate. Yin-yang scoring (ippon / waza-ari).
    Player vs machine (simple AI, harder per stage).
@@ -903,7 +903,7 @@ function drawTitle(){
   ctx.fillStyle="rgba(0,0,0,0.55)"; ctx.fillRect(0,0,W,H);
   ctx.textAlign="center";
   ctx.fillStyle="#ffd17a"; ctx.font="bold 40px monospace";
-  ctx.fillText("THE WAY OF THE EXPLODING FIST", W/2, 150);
+  ctx.fillText("THE WAY OF THE EXPLODING FIGHT", W/2, 150);
   ctx.fillStyle="#fff"; ctx.font="16px monospace";
   ctx.fillText("A one-on-one karate bout. First to two yin-yangs wins.", W/2, 188);
   ctx.font="14px monospace"; ctx.fillStyle="#cdd9e6";
