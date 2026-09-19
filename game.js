@@ -311,7 +311,6 @@ const JevAI = (()=>{
 // Expose for DevTools console: window.jevLog, window.jevClear
 window.jevLog = ()=>JevAI.getLog();
 window.jevClear = ()=>JevAI.clearLog();
-window.jevClear = ()=>JevAI.clearLog();
 
 
 const Keys = {};
@@ -1080,8 +1079,8 @@ function loop(now){
   }
   if(Pressed["KeyP"] && mode==="fighting"){ pause=!pause; }
 
-  if(!pause) update(dt);
-  draw();
+  if(!pause) { try { update(dt); } catch(e){ console.error("update:",e); } }
+  try { draw(); } catch(e){ console.error("draw:",e); }
   for(const k2 in Pressed) delete Pressed[k2];
   requestAnimationFrame(loop);
 }
@@ -1119,7 +1118,7 @@ function update(dt){
   const ai = JevAI.tick(p2, p1, stage, dt, aiFallback);
   // p1: Jev-controlled when autoplay is on, otherwise human input (null)
   const p1Fallback = ()=> aiControl(p1,p2,stage,dt);
-  const p1ctl = autoplay ? JevAI.p1.tick(p1, p2, stage, dt, p1Fallback) : null;
+  const p1ctl = (autoplay && JevAI.p1) ? JevAI.p1.tick(p1, p2, stage, dt, p1Fallback) : null;
   updateFighter(p1,p2,dt,p1ctl);
   updateFighter(p2,p1,dt,ai);
 
