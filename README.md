@@ -1,3 +1,5 @@
+<img width="1586" height="822" alt="fight" src="https://github.com/user-attachments/assets/1197f554-3891-4c78-8b92-cbc871c1cbd0" />
+
 # Fight
 An arcade style fighting game in vanilla Javascript to be played on Pages.
 
