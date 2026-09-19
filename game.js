@@ -565,7 +565,7 @@ function bgTheme(stage){
 }
 // Seated sensei: green gi, tricornered Chinese peasant hat
 function drawSensei(sx, sy){
-  const scale = 2.1;
+  const scale = 1.8;
   const s = (v)=> v * scale;
   const gi = "#3a6a3a";
   const giDark = "#2a4a2a";
@@ -673,6 +673,15 @@ function drawSensei(sx, sy){
   ctx.beginPath();
   ctx.moveTo(sx-s(3), headY-s(1)); ctx.lineTo(sx-s(1), headY-s(1));
   ctx.moveTo(sx+s(1), headY-s(1)); ctx.lineTo(sx+s(3), headY-s(1));
+  ctx.stroke();
+
+  // mustache
+  ctx.strokeStyle = "#2a1a0a"; ctx.lineWidth = s(2); ctx.lineCap = "round";
+  ctx.beginPath();
+  ctx.moveTo(sx-s(1), headY+s(2));
+  ctx.quadraticCurveTo(sx-s(4), headY+s(3), sx-s(6), headY+s(2));
+  ctx.moveTo(sx+s(1), headY+s(2));
+  ctx.quadraticCurveTo(sx+s(4), headY+s(3), sx+s(6), headY+s(2));
   ctx.stroke();
 
   // tricornered Chinese peasant hat (rice hat / douli)
