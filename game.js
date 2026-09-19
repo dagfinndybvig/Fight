@@ -26,28 +26,28 @@ const POINTS_TO_WIN = 2.0;        // two full yin-yangs win the bout
 // hb: vertical screen-y hitbox range (standing attacker coords)
 const G = GROUND_Y;
 const MOVES = {
-  punchHigh:  { dur:[0.07,0.07,0.17], reach:60, hb:[G-120,G-80],  pose:"PUNCH_HIGH" },
-  punchLow:   { dur:[0.07,0.07,0.17], reach:56, hb:[G-78, G-44], pose:"PUNCH_LOW"  },
-  kickHigh:   { dur:[0.11,0.09,0.25], reach:80, hb:[G-112,G-72], pose:"KICK_HIGH"  },
-  kickLow:    { dur:[0.11,0.09,0.25], reach:72, hb:[G-52, G-18], pose:"KICK_LOW"   },
-  roundhouse: { dur:[0.17,0.11,0.33], reach:88, hb:[G-96, G-46], pose:"ROUNDHOUSE" },
-  jumpKick:   { dur:[0.09,0.11,0.22], reach:74, hb:[G-92, G-52], pose:"JUMP_KICK"  },
-  jumpPunch:  { dur:[0.06,0.07,0.15], reach:54, hb:[G-118,G-78], pose:"PUNCH_HIGH" },
+  punchHigh:  { dur:[0.06,0.04,0.16], reach:50, hb:[G-116,G-92],  pose:"PUNCH_HIGH" },
+  punchLow:   { dur:[0.06,0.04,0.16], reach:48, hb:[G-76, G-52],  pose:"PUNCH_LOW"  },
+  kickHigh:   { dur:[0.10,0.05,0.24], reach:68, hb:[G-104,G-80],  pose:"KICK_HIGH"  },
+  kickLow:    { dur:[0.10,0.05,0.24], reach:62, hb:[G-48, G-24],  pose:"KICK_LOW"   },
+  roundhouse: { dur:[0.16,0.06,0.32], reach:76, hb:[G-88, G-56],  pose:"ROUNDHOUSE" },
+  jumpKick:   { dur:[0.08,0.06,0.20], reach:64, hb:[G-88, G-64],  pose:"JUMP_KICK"  },
+  jumpPunch:  { dur:[0.05,0.04,0.14], reach:46, hb:[G-114,G-90],  pose:"PUNCH_HIGH" },
 };
 
 // ---- Poses (local coords, facing-right; y down positive) ----
 // foot support local y must equal 50 - hipYoff to stay on ground.
 const POSES = {
-  IDLE:        { hipYoff:0,  lean:0.06, hR:{x:12,y:-8},  hL:{x:-10,y:-6}, fR:{x:12,y:50}, fL:{x:-12,y:50} },
-  CROUCH:      { hipYoff:22, lean:0.20, hR:{x:8,y:-4},   hL:{x:-8,y:-2},  fR:{x:18,y:28}, fL:{x:-18,y:28} },
-  BLOCK:       { hipYoff:0,  lean:-0.10,hR:{x:10,y:-30}, hL:{x:14,y:-20},fR:{x:14,y:50}, fL:{x:-14,y:50} },
-  PUNCH_HIGH:  { hipYoff:0,  lean:0.12, hR:{x:44,y:-30}, hL:{x:-16,y:-4},fR:{x:16,y:50}, fL:{x:-16,y:50} },
-  PUNCH_LOW:   { hipYoff:0,  lean:0.18, hR:{x:40,y:-4},  hL:{x:-14,y:-2},fR:{x:18,y:50}, fL:{x:-18,y:50} },
-  KICK_HIGH:   { hipYoff:0,  lean:-0.16,hR:{x:-10,y:-20},hL:{x:-16,y:-24},fR:{x:52,y:-18},fL:{x:-10,y:50} },
-  KICK_LOW:    { hipYoff:14, lean:0.12, hR:{x:-8,y:-16}, hL:{x:-14,y:-22},fR:{x:42,y:36}, fL:{x:-14,y:36} },
-  ROUNDHOUSE:  { hipYoff:0,  lean:-0.22,hR:{x:-14,y:-18},hL:{x:-18,y:-26},fR:{x:54,y:8},  fL:{x:-12,y:50} },
-  JUMP_KICK:   { hipYoff:0,  lean:-0.10,hR:{x:-12,y:-14},hL:{x:-16,y:-22},fR:{x:50,y:6},  fL:{x:-12,y:30} },
-  JUMP_IDLE:   { hipYoff:0,  lean:0.04, hR:{x:10,y:-6}, hL:{x:-10,y:-6}, fR:{x:8,y:26},  fL:{x:-8,y:30} },
+  IDLE:        { hipYoff:0,  lean:0.04, hR:{x:16,y:-22}, hL:{x:-6,y:-28}, fR:{x:16,y:50}, fL:{x:-14,y:50} },
+  CROUCH:      { hipYoff:22, lean:0.20, hR:{x:10,y:-10}, hL:{x:-4,y:-14}, fR:{x:20,y:28}, fL:{x:-20,y:28} },
+  BLOCK:       { hipYoff:0,  lean:-0.08,hR:{x:12,y:-34}, hL:{x:16,y:-24},fR:{x:16,y:50}, fL:{x:-14,y:50} },
+  PUNCH_HIGH:  { hipYoff:0,  lean:0.10, hR:{x:44,y:-30}, hL:{x:-14,y:-22},fR:{x:16,y:50}, fL:{x:-16,y:50} },
+  PUNCH_LOW:   { hipYoff:0,  lean:0.18, hR:{x:40,y:-4},  hL:{x:-12,y:-20},fR:{x:18,y:50}, fL:{x:-18,y:50} },
+  KICK_HIGH:   { hipYoff:0,  lean:-0.14,hR:{x:-10,y:-22},hL:{x:-14,y:-28},fR:{x:52,y:-18},fL:{x:-10,y:50} },
+  KICK_LOW:    { hipYoff:14, lean:0.12, hR:{x:-8,y:-18}, hL:{x:-12,y:-24},fR:{x:42,y:36}, fL:{x:-14,y:36} },
+  ROUNDHOUSE:  { hipYoff:0,  lean:-0.20,hR:{x:-12,y:-20},hL:{x:-16,y:-28},fR:{x:54,y:8},  fL:{x:-12,y:50} },
+  JUMP_KICK:   { hipYoff:0,  lean:-0.10,hR:{x:-12,y:-16},hL:{x:-16,y:-24},fR:{x:50,y:6},  fL:{x:-12,y:30} },
+  JUMP_IDLE:   { hipYoff:0,  lean:0.02, hR:{x:12,y:-14}, hL:{x:-8,y:-18}, fR:{x:8,y:26},  fL:{x:-8,y:30} },
   HIT:         { hipYoff:0,  lean:-0.26,hR:{x:-14,y:-22},hL:{x:-18,y:-16},fR:{x:16,y:50}, fL:{x:-16,y:50} },
   KO:          { hipYoff:38, lean:0.9,  hR:{x:30,y:-2},  hL:{x:-30,y:-2}, fR:{x:24,y:12}, fL:{x:-24,y:12} },
 };
@@ -151,7 +151,7 @@ function startMove(f, key){
 
 function tryJump(f){
   if(f.busy||f.stun>0) return;
-  if(f.y>=GROUND_Y-1 && f.vy>=0){ f.vy=-JUMP_VEL; f.state="jump"; }
+  if(f.y>=GROUND_Y-1 && f.vy>=0){ f.vy=-JUMP_VEL; f.state="jump"; f.y=GROUND_Y-2; }
 }
 
 function updateFighter(f, opp, dt, aiCtl){
@@ -247,11 +247,11 @@ function resolveHit(atk, def){
   const airOff = GROUND_Y - atk.y; // how high feet are raised (>0 in air)
   const y0=m.hb[0]-airOff, y1=m.hb[1]-airOff;
   // defender body box
-  let dH = (def.crouching && def.y>=GROUND_Y-1) ? 70 : 120;
-  const by0=def.y-dH, by1=def.y;
+  let dH = (def.crouching && def.y>=GROUND_Y-1) ? 60 : 110;
+  const by0=def.y-dH, by1=def.y-6;   // top of head to just below waist
   // horizontal
   const fdist = atk.facing*(def.x-atk.x);
-  if(fdist < 12 || fdist > m.reach+18) return null;
+  if(fdist < 30 || fdist > m.reach+8) return null;   // tighter range window
   // vertical overlap
   if(!(y0 < by1 && y1 > by0)) return null;
   atk.move.spent = true;
@@ -263,8 +263,8 @@ function resolveHit(atk, def){
   // connection -> ippon or waza-ari
   let pts;
   if(def.state==="attack") pts=0.5;        // trade
-  else if(fdist <= m.reach*0.6) pts=1.0;    // clean / well-timed
-  else pts=0.5;                            // glancing
+  else if(fdist <= m.reach*0.55) pts=1.0; // clean / well-timed
+  else pts=0.5;                           // glancing
   return { type:"hit", pts };
 }
 
@@ -329,56 +329,154 @@ function drawLimb(x0,y0,x1,y1,x2,y2,thick,col){
   ctx.beginPath(); ctx.moveTo(x0,y0); ctx.lineTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
 }
 
+function drawFist(x,y,skin,col){
+  ctx.fillStyle=col; ctx.beginPath(); ctx.arc(x,y,4.5,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle=skin; ctx.beginPath(); ctx.arc(x+1,y+1,2.5,0,Math.PI*2); ctx.fill();
+}
+function drawFoot(x,y,face,col){
+  ctx.fillStyle=col;
+  ctx.beginPath(); ctx.ellipse(x+face*3,y,6,3.5,0,0,Math.PI*2); ctx.fill();
+}
+
 function drawFighter(f){
   const p=f.pose;
   const hipY = f.y - HIP_ABOVE_FEET + p.hipYoff;
   const face=f.facing;
   const wx=(lx,ly)=>[f.x + lx*face, hipY + ly];
 
-  // torso direction (lean): up with forward lean
+  // ---- ground shadow ----
+  const airT = clamp((GROUND_Y - f.y)/180, 0, 1);
+  ctx.fillStyle = `rgba(0,0,0,${0.28*(1-airT)})`;
+  ctx.beginPath();
+  ctx.ellipse(f.x, GROUND_Y+4, 28*(1-airT*0.5), 6*(1-airT*0.5), 0, 0, Math.PI*2);
+  ctx.fill();
+
+  // torso direction (lean)
   const a = -Math.PI/2 + p.lean;
   const tdirx=Math.cos(a), tdiry=Math.sin(a);
   const neck = wx(L_TORSO*tdirx, L_TORSO*tdiry);
-  const shoulder = wx((L_TORSO-6)*tdirx, (L_TORSO-6)*tdiry);
-  const head = wx((L_TORSO+L_HEAD)*tdirx, (L_TORSO+L_HEAD)*tdiry);
+  const shoulder = wx((L_TORSO-8)*tdirx, (L_TORSO-8)*tdiry);
+  const head = wx((L_TORSO+L_HEAD+2)*tdirx, (L_TORSO+L_HEAD+2)*tdiry);
   const hip = wx(0,0);
 
   // colors
   const gi = f.flash>0 ? "#ffffff" : (f.isAI ? "#d04a4a" : "#3a78d0");
   const giDark = f.isAI ? "#9a3030" : "#2a5aa0";
+  const giDarker = f.isAI ? "#6a2020" : "#1a3a70";
   const skin = "#e8b88a";
-  const belt = f.isAI ? "#222" : "#222";
+  const skinShade = "#c89868";
+  const beltCol = f.isAI ? "#222" : "#cc0";
+  const hairCol = f.isAI ? "#2a1a0a" : "#1a1a2a";
 
-  // legs (behind torso)
+  // ---- BACK limbs (darker) first ----
   const fR=wx(p.fR.x,p.fR.y), fL=wx(p.fL.x,p.fL.y);
-  const legK = solveIK(hip[0],hip[1], fR[0],fR[1], L_THIGH,L_SHIN, face>0?1:-1);
-  drawLimb(hip[0],hip[1], legK.kx,legK.ky, fR[0],fR[1], 11, giDark);
-  const legK2 = solveIK(hip[0],hip[1], fL[0],fL[1], L_THIGH,L_SHIN, face>0?-1:1);
-  drawLimb(hip[0],hip[1], legK2.kx,legK2.ky, fL[0],fL[1], 11, gi);
-
-  // arms
   const hR=wx(p.hR.x,p.hR.y), hL=wx(p.hL.x,p.hL.y);
-  const aK = solveIK(shoulder[0],shoulder[1], hR[0],hR[1], L_UARM,L_FARM, face>0?-1:1);
-  drawLimb(shoulder[0],shoulder[1], aK.kx,aK.ky, hR[0],hR[1], 9, gi);
+
+  // back leg
+  const legK2 = solveIK(hip[0],hip[1], fL[0],fL[1], L_THIGH,L_SHIN, face>0?-1:1);
+  drawLimb(hip[0],hip[1], legK2.kx,legK2.ky, fL[0],fL[1], 11, giDarker);
+  // bare shin
+  const shLx = lerp(legK2.kx,fL[0],0.45), shLy = lerp(legK2.ky,fL[1],0.45);
+  drawLimb(shLx,shLy, fL[0],fL[1], 8, skinShade);
+  drawFoot(fL[0],fL[1], face, skinShade);
+
+  // back arm
   const aK2 = solveIK(shoulder[0],shoulder[1], hL[0],hL[1], L_UARM,L_FARM, face>0?1:-1);
-  drawLimb(shoulder[0],shoulder[1], aK2.kx,aK2.ky, hL[0],hL[1], 9, giDark);
+  drawLimb(shoulder[0],shoulder[1], aK2.kx,aK2.ky, hL[0],hL[1], 9, giDarker);
+  // bare forearm
+  const faLx = lerp(aK2.kx,hL[0],0.45), faLy = lerp(aK2.ky,hL[1],0.45);
+  drawLimb(faLx,faLy, hL[0],hL[1], 7, skinShade);
+  drawFist(hL[0],hL[1], skin, giDarker);
 
-  // torso (as a thick trunk)
-  ctx.strokeStyle=gi; ctx.lineWidth=18; ctx.lineCap="round";
-  ctx.beginPath(); ctx.moveTo(hip[0],hip[1]); ctx.lineTo(neck[0],neck[1]); ctx.stroke();
-  // belt
-  ctx.strokeStyle=belt; ctx.lineWidth=6;
-  ctx.beginPath(); ctx.moveTo(hip[0]-7*face,hip[1]-2); ctx.lineTo(hip[0]+7*face,hip[1]-2); ctx.stroke();
+  // ---- GI JACKET (filled trapezoid) ----
+  // compute shoulder/hip widths perpendicular to torso dir
+  const perpX = -tdiry, perpY = tdirx;
+  const sw = 14, hw = 10; // half-width at shoulders/hips
+  const sl = [shoulder[0]+perpX*sw, shoulder[1]+perpY*sw];
+  const sr = [shoulder[0]-perpX*sw, shoulder[1]-perpY*sw];
+  const hl = [hip[0]+perpX*hw, hip[1]+perpY*hw];
+  const hr = [hip[0]-perpX*hw, hip[1]-perpY*hw];
+  ctx.fillStyle = gi;
+  ctx.beginPath();
+  ctx.moveTo(sl[0],sl[1]); ctx.lineTo(sr[0],sr[1]);
+  ctx.lineTo(hr[0],hr[1]); ctx.lineTo(hl[0],hl[1]); ctx.closePath(); ctx.fill();
+  // gi lapel (V-neck)
+  ctx.fillStyle = giDark;
+  ctx.beginPath();
+  ctx.moveTo(sl[0],sl[1]);
+  ctx.lineTo(shoulder[0]+perpX*3, shoulder[1]+perpY*3);
+  ctx.lineTo(neck[0], neck[1]);
+  ctx.lineTo(shoulder[0]-perpX*3, shoulder[1]-perpY*3);
+  ctx.lineTo(sr[0],sr[1]);
+  ctx.lineTo(sr[0]-tdirx*2, sr[1]-tdiry*2);
+  ctx.lineTo(hl[0]+tdirx*2, hl[1]+tdiry*2);
+  ctx.lineTo(sl[0]+tdirx*2, sl[1]+tdiry*2);
+  ctx.closePath(); ctx.fill();
+  // lapel line
+  ctx.strokeStyle = giDarker; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.moveTo(sl[0],sl[1]); ctx.lineTo(neck[0],neck[1]); ctx.lineTo(sr[0],sr[1]); ctx.stroke();
 
-  // head
+  // ---- BELT ----
+  ctx.strokeStyle=beltCol; ctx.lineWidth=5; ctx.lineCap="butt";
+  ctx.beginPath();
+  ctx.moveTo(hip[0]+perpX*11, hip[1]+perpY*11);
+  ctx.lineTo(hip[0]-perpX*11, hip[1]-perpY*11);
+  ctx.stroke();
+  // belt knot
+  ctx.fillStyle=beltCol;
+  ctx.beginPath(); ctx.arc(hip[0]+face*2, hip[1], 3.5, 0, Math.PI*2); ctx.fill();
+  // belt tails
+  ctx.strokeStyle=beltCol; ctx.lineWidth=3; ctx.lineCap="round";
+  ctx.beginPath();
+  ctx.moveTo(hip[0]+face*2, hip[1]+1);
+  ctx.lineTo(hip[0]+face*5, hip[1]+8);
+  ctx.moveTo(hip[0]+face*2, hip[1]+1);
+  ctx.lineTo(hip[0]-face*1, hip[1]+9);
+  ctx.stroke();
+
+  // ---- FRONT leg ----
+  const legK = solveIK(hip[0],hip[1], fR[0],fR[1], L_THIGH,L_SHIN, face>0?-1:1);
+  drawLimb(hip[0],hip[1], legK.kx,legK.ky, fR[0],fR[1], 12, giDark);
+  // bare shin
+  const shRx = lerp(legK.kx,fR[0],0.45), shRy = lerp(legK.ky,fR[1],0.45);
+  drawLimb(shRx,shRy, fR[0],fR[1], 9, skin);
+  drawFoot(fR[0],fR[1], face, skin);
+
+  // ---- FRONT arm ----
+  const aK = solveIK(shoulder[0],shoulder[1], hR[0],hR[1], L_UARM,L_FARM, face>0?1:-1);
+  drawLimb(shoulder[0],shoulder[1], aK.kx,aK.ky, hR[0],hR[1], 10, gi);
+  // bare forearm
+  const faRx = lerp(aK.kx,hR[0],0.45), faRy = lerp(aK.ky,hR[1],0.45);
+  drawLimb(faRx,faRy, hR[0],hR[1], 8, skin);
+  drawFist(hR[0],hR[1], skin, gi);
+
+  // ---- HEAD ----
+  const hr2 = L_HEAD+1;
+  // hair
+  ctx.fillStyle=hairCol;
+  ctx.beginPath(); ctx.arc(head[0], head[1]-1, hr2+1, Math.PI*1.05, Math.PI*1.95); ctx.fill();
+  ctx.beginPath(); ctx.arc(head[0], head[1]-2, hr2, Math.PI*0.7, Math.PI*0.95, false); ctx.fill();
+  // face
   ctx.fillStyle=skin;
-  ctx.beginPath(); ctx.arc(head[0],head[1],L_HEAD,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(head[0],head[1],hr2,0,Math.PI*2); ctx.fill();
+  // headband
+  ctx.fillStyle = f.isAI ? "#e22" : "#2a8";
+  ctx.beginPath();
+  ctx.arc(head[0],head[1]-3, hr2-0.5, Math.PI*0.85, Math.PI*2.15, false);
+  ctx.lineTo(head[0]-face*(hr2+2), head[1]-4);
+  ctx.lineTo(head[0]-face*(hr2+6), head[1]-1);
+  ctx.lineTo(head[0]-face*(hr2+2), head[1]+1);
+  ctx.closePath(); ctx.fill();
+  // headband tail
+  ctx.strokeStyle = f.isAI ? "#e22" : "#2a8"; ctx.lineWidth=2.5; ctx.lineCap="round";
+  ctx.beginPath();
+  ctx.moveTo(head[0]-face*(hr2+5), head[1]-1);
+  ctx.lineTo(head[0]-face*(hr2+9), head[1]+3);
+  ctx.lineTo(head[0]-face*(hr2+11), head[1]+8);
+  ctx.stroke();
+  // eye
   ctx.fillStyle="#222";
-  ctx.beginPath(); ctx.arc(head[0]+face*3,head[1]-1,1.8,0,Math.PI*2); ctx.fill();
-
-  // hands/feet dots
-  ctx.fillStyle=skin;
-  for(const pt of [hR,hL,fR,fL]){ ctx.beginPath(); ctx.arc(pt[0],pt[1],4,0,Math.PI*2); ctx.fill(); }
+  ctx.beginPath(); ctx.arc(head[0]+face*3,head[1]-1,1.6,0,Math.PI*2); ctx.fill();
 }
 
 // yin-yang slot: fill 0 (empty), 0.5 (half = waza-ari), 1 (full = ippon)
