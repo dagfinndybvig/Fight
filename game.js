@@ -291,8 +291,8 @@ const JevAI = (()=>{
 
   // p2 instance (AI opponent) and p1 instance (autoplay)
   // Each gets a distinct tactical personality so they fight differently.
-  const p2inst = create("p2", "My fighting style: calculated aggression. I control the spacing with footwork, staying just outside the opponent's reach and stepping in to strike when they are open. I favor roundhouse and high kicks at mid range, sweeps when they crouch, and elbows when close. I block incoming attacks and immediately counter. I do not give ground freely — I use back kicks to reposition without retreating. I vary my attacks between high and low to keep the opponent guessing.");
-  const p1inst = create("p1", "My fighting style: aggressive and proactive. I close distance quickly and press the attack. I favor elbows at close range, high kicks at mid range, and jump attacks to close distance. I block only when the opponent is clearly attacking. I rarely retreat — I would rather sidestep with a back kick than give ground.");
+  const p2inst = create("p2", "My fighting style: calculating counter-fighter. I circle and probe with footwork, alternating between approaching and retreating to measure distance and draw the opponent forward. I attack in bursts after retreating — step back, let them chase, then suddenly step in with a roundhouse or high kick. Between attacks I use approach and retreat rhythmically to control range rather than standing still. When the opponent attacks I block, then immediately counter with a sweep or elbow. I mix high and low to stay unpredictable.");
+  const p1inst = create("p1", "My fighting style: aggressive swarmer with footwork. I press forward but also back off in a rhythm — step in, throw a combination, step out, then press again. I use approach and retreat alternately to create openings rather than charging constantly. When close I throw elbows and low punches, at mid range I favor high kicks and roundhouses. If the opponent retreats I pursue with jump attacks. I block when they counter, then immediately resume pressing.");
 
   return {
     ...p2inst,           // primary instance (p2) — backward compatible
