@@ -29,7 +29,7 @@ Win all four stages to become the master.
 jump attacks. See [DESIGN.md](DESIGN.md) for the full move list and mechanics.
 
 `M` mutes sound, `P` pauses, `J` sets the Jev API key, `L` toggles the
-Jev log panel.
+Jev log panel, `0` toggles autoplay.
 
 ### Running
 
@@ -50,14 +50,27 @@ The key is stored in `localStorage` — press **J** again to change or clear it.
 
 The HUD shows the Jev status in the bottom-right corner:
 - **green** — Jev is active and driving the AI
-- **yellow** — query in flight (brief, ~70-500ms per poll)
 - **red** — fallback to local heuristic (no key, network error, or
   confidence below 0.3)
 
+### Autoplay mode
+
+Press **0** to toggle autoplay. When on, Jev controls both fighters —
+each with its own independent polling instance, fighting style, and
+local heuristic fallback. The bull bonus round is skipped in autoplay.
+
+Each fighter has two distinct fighting styles and randomly switches
+between them every 3-7 seconds for variety. Jev's probability
+distribution is sampled with a random temperature (1.6-2.4) so fighters
+don't always pick the safest move — this produces natural variety in
+both autoplay and manual play.
+
+### Jev log
+
 Press **L** during a fight to toggle an on-canvas log panel showing every
-Jev decision: choice, confidence, stage, and probability distribution. In
-the DevTools console, `window.jevLog()` returns the full 200-entry
-ring buffer and `window.jevClear()` empties it.
+Jev decision: which fighter, choice, confidence, stage, and probability
+distribution. In the DevTools console, `window.jevLog()` returns the
+full 200-entry ring buffer and `window.jevClear()` empties it.
 
 ## AI
 
@@ -74,6 +87,8 @@ error, or low confidence. See [DESIGN.md](DESIGN.md) for details.
 - [x] Bull bonus round after stage 2
 - [x] Jev integration with local-AI fallback
 - [x] CORS proxy server for local Jev play (verified)
+- [x] Autoplay mode: Jev controls both fighters
+- [x] Fighting styles with random switching and temperature sampling
 
 ## Design
 

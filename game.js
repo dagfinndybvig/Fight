@@ -805,7 +805,7 @@ function drawHUD(p1,p2,stage){
   // Jev status indicator
   if(JevAI.isEnabled()){
     const s = JevAI.getStatus();
-    const col = s.status==="active" ? "#4f4" : s.status==="waiting" ? "#fd4" : "#f66";
+    const col = s.status==="active" ? "#4f4" : "#f66";
     ctx.textAlign="right"; ctx.font="11px monospace"; ctx.fillStyle=col;
     ctx.fillText("JEV: " + s.status + (s.detail?" "+s.detail:""), W-30, H-12);
   } else {
@@ -840,6 +840,7 @@ function aiControl(f, opp, stage, dt){
   const close = d < 60;
   const blockChance = clamp(0.18 + stage*0.12, 0.18, 0.6);
   const aggro = clamp(0.3 + stage*0.15, 0.3, 0.95);
+  const toward = opp.x >= f.x ? "right" : "left";
   const away = toward==="right" ? "left":"right";
 
   if(oppAttacking && inRange && Math.random()<blockChance){
@@ -1250,7 +1251,7 @@ function drawJevLogPanel(){
     ctx.fillText(time, x + 8, ly);
     if(e.ok){
       ctx.fillStyle = col;
-      ctx.fillText(e.choice, x + 92, ly);
+      ctx.fillText((e.id||"?") + " " + e.choice, x + 60, ly);
       ctx.fillStyle = "#999";
       ctx.fillText(e.confidence.toFixed(2), x + 180, ly);
       ctx.fillStyle = "#555";

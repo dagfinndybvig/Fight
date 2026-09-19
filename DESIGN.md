@@ -95,7 +95,8 @@ animations.
 | 3 | Buddha (statue silhouette, dark) | Faster, more defensive |
 | 4 | Pagoda (sunset, warm) | Fastest, highest block rate |
 
-After clearing stage 2, the **bull bonus round** triggers before stage 3.
+After clearing stage 2, the **bull bonus round** triggers before stage 3
+(skipped in autoplay mode).
 
 ## Bull bonus round
 
@@ -120,6 +121,9 @@ steam puffs, swishing tail.
 - Decisions: block (away + down), attack (varied by spacing), approach,
   retreat, jump, idle jitter.
 
+This serves as the fallback for both fighters when Jev is unavailable
+(no key, network error, low confidence).
+
 ### Jev AI (TypeSafe System One) — verified working
 
 When a TypeSafe API key is set (press **J** in-game), the machine player is
@@ -127,38 +131,125 @@ driven by [Jev](https://www.typesafe.ai):
 
 - **Endpoint**: `POST https://api.typesafe.ai/v1/systemone`
 - **Model**: `jev-latest`
-- **Poll interval**: ~450ms
+- **Poll interval**: ~300ms
+- **Fetch timeout**: 3s via `AbortController`; on timeout or error, falls
+  back to the local heuristic instead of freezing.
+- **Confidence floor**: 0.3 — below this, falls back to local heuristic.
 - **Question type**: `Choice` with 14 options (approach, retreat, block,
   jump, punch_high, punch_low, elbow, kick_high, kick_low, sweep, roundhouse,
   back_kick, jump_kick, jump_round, wait)
-- **State sent**: compact text — distance, both stances, scores, stage,
-  whether opponent is attacking, whether AI is busy.
-- **Fetch timeout**: 3s via `AbortController`; on timeout the AI falls
-  back to the local heuristic instead of freezing.
-- **Confidence floor**: 0.3 — below this, falls back to local heuristic.
 
-**CORS proxy.** The TypeSafe API does not send CORS headers, so direct
-browser-to-API calls are blocked. `server.js` is a zero-dependency Node.js
-server that serves the game on `http://localhost:3000` and proxies
-`POST /jev` to `https://api.typesafe.ai/v1/systemone` server-side,
-forwarding the `Authorization` header. The game auto-detects: when served
-over HTTP it calls `/jev`; when opened as `file://` it attempts the
-direct URL (which will fail in browsers due to CORS — use the server).
+#### CORS proxy
 
-**Jump attacks.** `choiceToAction()` is recomputed every frame from the
-stored Jev choice. For `jump_kick` / `jump_round`, it sets only `up` while
-grounded (launching the jump), then switches to `kick` (and `toward` for
-roundhouse) once airborne — so Jev can actually produce jump attacks
-instead of them silently becoming ground kicks.
+The TypeSafe API does not send CORS headers, so direct browser-to-API
+calls are blocked. `server.js` is a zero-dependency Node.js server that
+serves the game on `http://localhost:3000` and proxies `POST /jev` to
+`https://api.typesafe.ai/v1/systemone` server-side, forwarding the
+`Authorization` header. The game auto-detects: when served over HTTP it
+calls `/jev`; when opened as `file://` it attempts the direct URL (which
+will fail in browsers due to CORS — use the server).
 
-**Logging.** Every Jev poll is logged to a 200-entry ring buffer:
-`{ t, stage, ok, choice, confidence, state, probabilities, reason }`.
-Press **L** to toggle an on-canvas panel. In DevTools:
-`window.jevLog()` returns the full log, `window.jevClear()` empties it.
+#### Architecture: instance factory
 
-Fallback is always visible: no key, network error, or confidence below 0.3
-falls back to the local heuristic. The HUD shows the current mode
-(green = active, yellow = waiting, red = fallback).
+`JevAI` is an IIFE that exposes a factory (`create(id, styles)`). Each
+instance has independent polling state (poll timer, in-flight flag, last
+choice, status, style index). Two instances are created:
+
+- `JevAI` (p2, the AI opponent) — backward compatible with all existing calls.
+- `JevAI.p1` (player fighter, used only in autoplay mode).
+
+Both share the API key and a 200-entry ring-buffer log. Log entries include
+an `id` field (`"p1"` or `"p2"`) to distinguish which fighter made the
+decision.
+
+#### State sent to Jev
+
+`buildState()` constructs a compact text string describing the current game
+state from the fighter's perspective:
+
+- Scoring rules (ippon = 1pt, waza-ari = 0.5pt, first to 2 wins).
+- Current stage and difficulty context.
+- Both fighters' scores.
+- Distance in pixels, with a range label and move suggestions
+  (e.g. "kick range — use high kicks, roundhouses, or low kicks").
+- Both fighters' stances (idle, walking, crouching, airborne, attacking).
+- Arena position for each fighter (left wall, right wall, center) —
+  so Jev knows when it or the opponent is cornered.
+- Whether the opponent is attacking (with a tactical cue: "block or
+  counter now" vs "this is my chance to strike").
+- Whether the fighter is busy or free to act.
+- The fighter's last move (so Jev can avoid repeating).
+- The active fighting style string (see below).
+
+#### Fighting styles
+
+Each fighter has **two style strings** and randomly switches between them
+every 3-7 seconds (first switch 2-5 seconds in). On switch, `lastChoice` is
+cleared so Jev re-evaluates immediately with the new personality.
+
+| Fighter | Style 1 | Style 2 |
+| --- | --- | --- |
+| p2 (red) | Defensive wall — blocks frequently, punishes with sweeps/elbows, back kicks to space, never jumps | Pressure kickboxer — presses forward, roundhouse at mid range, elbows up close, occasional jump kicks |
+| p1 (blue) | Relentless swarmer — charges in, elbows/low punches/sweeps in rapid succession, never jumps, never retreats | Ranged striker — keeps at kick range, high kicks and back kicks, jump kicks when opponent closes, circles with back kicks |
+
+#### Temperature sampling
+
+Instead of always taking Jev's top choice (argmax), the game **samples from
+the full probability distribution** that Jev returns. A random temperature
+of 1.6-2.4 is applied per poll: `weight = probability^(1/temperature)`.
+Higher temperature flattens the distribution, making lower-probability
+moves more likely to be selected. This produces natural variety while
+still respecting Jev's tactical judgment.
+
+Two rules govern sampling:
+- **Never repeat the last move** — the previous choice is filtered out
+  before sampling, so no two consecutive identical decisions.
+- **Fallback to argmax** if probabilities are not available.
+
+Log entries include both `jevChoice` (Jev's original top pick) and `choice`
+(the sampled pick that was actually executed).
+
+#### Jump attacks
+
+`choiceToAction()` is recomputed every frame from the stored choice. For
+`jump_kick` / `jump_round`, it sets only `up` while grounded (launching the
+jump), then switches to `kick` (and `toward` for roundhouse) once airborne.
+Without this, both `up` and `kick` would fire simultaneously and `kick`
+would win (ground move), blocking the jump.
+
+#### Direction resolution
+
+`choiceToAction` uses abstract `toward`/`away` flags instead of
+pre-computing `left`/`right`. `updateFighter` resolves these to `ml`/`mr`
+using the current `f.facing`, which is always computed from the latest
+opponent position. This prevents a stale direction if the opponent moves
+between the `tick()` call and the fighter update.
+
+#### Autoplay mode
+
+Press **0** to toggle autoplay. When on, `JevAI.p1` drives the player
+fighter (p1) with the same architecture as p2 — independent polling,
+style switching, temperature sampling, and local heuristic fallback. The
+bonus round is skipped in autoplay (goes straight to stage clear). The
+HUD shows a yellow `AUTOPLAY (0 to toggle)` indicator in the bottom-left.
+
+### Logging
+
+Every Jev poll is logged to a 200-entry ring buffer:
+`{ t, id, stage, ok, choice, jevChoice, confidence, state, probabilities, reason }`.
+
+- Press **L** to toggle an on-canvas panel showing recent decisions with
+  timestamps, fighter ID, choice, confidence, stage, and the
+  second-highest probability option.
+- In DevTools: `window.jevLog()` returns the full log array,
+  `window.jevClear()` empties it.
+
+### HUD status
+
+The bottom-right shows the Jev status:
+- **green** — Jev is active and driving the AI.
+- **red** — fallback to local heuristic (no key, network error, low confidence).
+- Status stays green during fetch (no yellow flicker).
 
 ## Architecture
 
@@ -173,10 +264,13 @@ server.js    — local Node.js server + Jev CORS proxy (run: node server.js)
 
 ```
 requestAnimationFrame -> loop()
-  -> update(dt)    — state machine dispatch
-  -> draw()         — background, fighters, HUD, overlays
+  -> update(dt)    — state machine dispatch (wrapped in try/catch)
+  -> draw()         — background, fighters, HUD, overlays (wrapped in try/catch)
   -> clear edge-triggered input
 ```
+
+Both `update()` and `draw()` are wrapped in `try/catch` so a runtime error
+in either cannot kill the `requestAnimationFrame` loop.
 
 ### State machine
 
@@ -188,6 +282,9 @@ title -> fighting -> roundPause -> nextOrEnd()
                                    ├─ champion
                                    └─ gameover
 ```
+
+In autoplay mode, the bonus round is skipped — clearing stage 2 goes
+straight to stage clear.
 
 ### Constants
 
@@ -201,6 +298,9 @@ title -> fighting -> roundPause -> nextOrEnd()
 | `WALK` | 168 px/s | Walk speed |
 | `POINTS_TO_WIN` | 2.0 | Two full yin-yangs |
 | `minGap` | 44 px | Hard wall (can't walk through) |
+| `POLL_MS` | 300 | Jev poll interval |
+| `CONFIDENCE_FLOOR` | 0.3 | Below this, fall back to local AI |
+| `LOG_MAX` | 200 | Ring buffer size for Jev log |
 
 ## Sound
 
@@ -215,3 +315,20 @@ WebAudio-synthesized SFX, no audio files:
 | Lose | Descending sawtooth |
 
 `M` toggles mute.
+
+## Controls
+
+| Key | Action |
+| --- | --- |
+| Arrow Left/Right or A/D | Move |
+| Arrow Up or W | Jump |
+| Arrow Down or S | Crouch |
+| F or V | Punch |
+| G or K | Kick |
+| Back + Down | Block |
+| Enter / Space | Start / restart |
+| M | Toggle mute |
+| P | Pause |
+| J | Set Jev API key |
+| L | Toggle Jev log panel |
+| 0 | Toggle autoplay |
