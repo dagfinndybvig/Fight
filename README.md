@@ -25,9 +25,9 @@ First to **two full yin-yangs** wins the bout and advances to a harder stage
 | Move | Arrow Left / Right (or A / D) |
 | Jump | Arrow Up (or W) |
 | Crouch | Arrow Down (or S) |
-| Punch | F (or J) |
+| Punch | F (or V) |
 | Kick | G (or K) |
-| Block | hold *away* from the opponent (no attack) |
+| Block | hold *back* (away) **+ Down** |
 
 Modifiers: hold **Down** for low attacks; **Kick + toward** for a roundhouse;
 **Kick in the air** for a jump kick; **Punch in the air** for a jump punch.
@@ -44,5 +44,19 @@ are drawn on canvas; sound is synthesized with WebAudio).
 - [x] Core bout loop with yin-yang scoring
 - [x] 8 moves (high/low punch & kick, roundhouse, jump kick, jump punch, block)
 - [x] 4 stages with themed backgrounds and scaling AI
+- [x] Jev integration (TypeSafe System One model) with local-AI fallback
 - [ ] Bull bonus round (Mas Oyama single-strike)
-- [ ] Replace simple AI with Jev
+
+## AI: Jev integration
+
+The machine player can be driven by [Jev](https://www.typesafe.ai), TypeSafe's
+System One model — a typed decision model that returns a probability-weighted
+choice rather than generating text. Press **J** in-game to enter your TypeSafe
+API key (stored in localStorage). When a key is present, the game polls Jev
+every ~450ms with a compact fight-state description and a `Choice` question
+over the fighter's move set. The response sets the AI's current intent until
+the next poll.
+
+Fallback is always visible, never silent: no key, a network error, or
+confidence below 0.3 falls back to the local heuristic AI, and the HUD shows
+which mode is active.

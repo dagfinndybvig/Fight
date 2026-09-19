@@ -97,8 +97,156 @@ const Sound = (()=>{
 })();
 
 // ============================================================
-// Input
+// Jev AI (TypeSafe System One model)
+// Polls POST https://api.typesafe.ai/v1/systemone with a compact
+// game state and a Choice question. Falls back to local AI when
+// no key, network error, or low confidence.
 // ============================================================
+const JevAI = (()=>{
+  const ENDPOINT = "https://api.typesafe.ai/v1/systemone";
+  const MODEL = "jev-latest";
+  const POLL_MS = 450;          // how often to query Jev
+  const CONFIDENCE_FLOOR = 0.3; // below this, fall back
+
+  let apiKey = localStorage.getItem("typesafe_api_key") || "";
+  let enabled = !!apiKey;
+  let pollTimer = 0;
+  let inflight = false;
+  let lastAction = null;        // {left,right,up,down,punch,kick}
+  let status = "idle";          // idle | waiting | active | fallback
+  let statusDetail = "";
+
+  // action options sent to Jev — each maps to a button combo
+  const ACTIONS = {
+    approach:    "Move toward the opponent to close distance",
+    retreat:     "Step away from the opponent to create space",
+    block:       "Hold back to block incoming attacks",
+    jump:        "Jump into the air",
+    punch_high:  "Throw a high punch to the head",
+    punch_low:   "Throw a low punch to the body",
+    kick_high:   "Throw a high kick to the head",
+    kick_low:    "Throw a low sweep kick",
+    roundhouse:  "Throw a powerful roundhouse kick",
+    jump_kick:   "Jump and kick in the air",
+    wait:        "Hold position and observe",
+  };
+  // map Jev choice -> button-combo
+  function choiceToAction(choice, ai, opp){
+    const toward = opp.x >= ai.x ? "right" : "left";
+    const away = toward === "right" ? "left" : "right";
+    const o = { left:false,right:false,up:false,down:false,punch:false,kick:false };
+    switch(choice){
+      case "approach":   o[toward]=true; break;
+      case "retreat":    o[away]=true; break;
+      case "block":      o[away]=true; o.down=true; break;  // holding away + down = block
+      case "jump":       o.up=true; break;
+      case "punch_high": o.punch=true; break;
+      case "punch_low":  o.down=true; o.punch=true; break;
+      case "kick_high":  o.kick=true; break;
+      case "kick_low":   o.down=true; o.kick=true; break;
+      case "roundhouse": o[toward]=true; o.kick=true; break;
+      case "jump_kick":  o.up=true; o.kick=true; break;
+      case "wait":       break;
+      default:           break;
+    }
+    return o;
+  }
+
+  function buildState(ai, opp, stage){
+    const d = Math.round(Math.abs(opp.x - ai.x));
+    const aiStance = ai.state + (ai.crouching ? "(crouching)" : "") + (ai.y<GROUND_Y-1 ? "(airborne)" : "");
+    const oppStance = opp.state + (opp.crouching ? "(crouching)" : "") + (opp.y<GROUND_Y-1 ? "(airborne)" : "");
+    return [
+      "Karate bout. Yin-yang scoring: clean hit = ippon (1pt), glancing = waza-ari (0.5pt). First to 2 points wins.",
+      "Stage " + stage + " of 4. Higher stages have faster opponents.",
+      "My score: " + ai.score.toFixed(1) + ". Opponent score: " + opp.score.toFixed(1) + ".",
+      "Distance between fighters: " + d + " pixels. Close range is under 60, kicking range is 60-80, punch range is 40-55.",
+      "My stance: " + aiStance + ". Opponent stance: " + oppStance + ".",
+      "Opponent is " + (opp.state==="attack" ? "attacking" : "not attacking") + ".",
+      "I am " + (ai.busy ? "busy" : "free to act") + ".",
+    ].join(" ");
+  }
+
+  async function query(ai, opp, stage){
+    const body = {
+      model: MODEL,
+      state: buildState(ai, opp, stage),
+      questions: {
+        action: {
+          type: "choice",
+          instructions: "Which move should the fighter make right now?",
+          criteria: ACTIONS,
+        }
+      }
+    };
+    const resp = await fetch(ENDPOINT, {
+      method: "POST",
+      headers: {
+        "Authorization": "Bearer " + apiKey,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
+    });
+    if(!resp.ok) throw new Error("HTTP " + resp.status);
+    const data = await resp.json();
+    const ans = data.answers && data.answers.action;
+    if(!ans || !ans.choice) throw new Error("no choice in response");
+    return { choice: ans.choice, confidence: ans.confidence || 0 };
+  }
+
+  function tick(ai, opp, stage, dt, fallbackFn){
+    if(!enabled || !apiKey){
+      return fallbackFn();
+    }
+    pollTimer += dt;
+    if(inflight) {
+      // keep executing last action while waiting
+      return lastAction || fallbackFn();
+    }
+    if(pollTimer < POLL_MS/1000 && lastAction){
+      return lastAction;
+    }
+    pollTimer = 0;
+    // time to poll Jev
+    inflight = true;
+    status = "waiting";
+    query(ai, opp, stage).then(res=>{
+      inflight = false;
+      if(res.confidence < CONFIDENCE_FLOOR){
+        status = "fallback";
+        statusDetail = "low conf " + res.confidence.toFixed(2);
+        lastAction = fallbackFn();
+      } else {
+        status = "active";
+        statusDetail = res.choice + " (" + res.confidence.toFixed(2) + ")";
+        lastAction = choiceToAction(res.choice, ai, opp);
+      }
+    }).catch(err=>{
+      inflight = false;
+      status = "fallback";
+      statusDetail = String(err.message || err).slice(0,30);
+      lastAction = fallbackFn();
+    });
+    return lastAction || fallbackFn();
+  }
+
+  return {
+    tick,
+    isEnabled(){ return enabled; },
+    getStatus(){ return { status, detail: statusDetail }; },
+    setKey(key){
+      apiKey = key || "";
+      enabled = !!apiKey;
+      localStorage.setItem("typesafe_api_key", apiKey);
+      // reset state
+      pollTimer=0; inflight=false; lastAction=null; status = enabled?"idle":"fallback";
+    },
+    getKey(){ return apiKey; },
+    reset(){ pollTimer=0; inflight=false; lastAction=null; status="idle"; statusDetail=""; },
+  };
+})();
+
+
 const Keys = {};
 const Pressed = {}; // edge-triggered this frame
 const KEYMAP = {
@@ -106,7 +254,7 @@ const KEYMAP = {
   right: ["ArrowRight","KeyD"],
   up:    ["ArrowUp","KeyW"],
   down:  ["ArrowDown","KeyS"],
-  punch: ["KeyF","KeyJ"],
+  punch: ["KeyF","KeyV"],
   kick:  ["KeyG","KeyK"],
   start: ["Enter","Space"],
 };
@@ -117,6 +265,10 @@ addEventListener("keydown", e=>{
   Keys[e.code]=true;
   if(["ArrowLeft","ArrowRight","ArrowUp","ArrowDown","Space"].includes(e.code)) e.preventDefault();
   if(e.code==="KeyM") Sound.toggle();
+  if(e.code==="KeyJ"){
+    const key = prompt("Enter TypeSafe API key (leave empty to disable Jev and use local AI):", JevAI.getKey()||"");
+    if(key !== null){ JevAI.setKey(key.trim()); }
+  }
 });
 addEventListener("keyup", e=>{ Keys[e.code]=false; });
 
@@ -189,9 +341,9 @@ function updateFighter(f, opp, dt, aiCtl){
   // horizontal movement
   if(!f.busy && f.stun<=0 && f.y>=GROUND_Y-1){
     let dir = (mr?1:0)-(ml?1:0);
-    // holding away from opponent with no attack intent = block
+    // block: hold back (away from opponent) and down, with no attack intent
     const holdingAway = (f.facing>0 && ml && !mr) || (f.facing<0 && mr && !ml);
-    if(holdingAway && !punch && !kick && !up){
+    if(holdingAway && down && !punch && !kick && !up){
       f.state="block";
       dir = 0;
     } else if(dir!==0 && !down){
@@ -519,6 +671,16 @@ function drawHUD(p1,p2,stage){
   ctx.textAlign="right"; ctx.fillStyle="#d04a4a";
   ctx.fillText("OPPONENT", W-30, 30);
   drawYinYang(W-70,52,12, clamp(p2.score,0,1)); drawYinYang(W-100,52,12, clamp(p2.score-1,0,1));
+  // Jev status indicator
+  if(JevAI.isEnabled()){
+    const s = JevAI.getStatus();
+    const col = s.status==="active" ? "#4f4" : s.status==="waiting" ? "#fd4" : "#f66";
+    ctx.textAlign="right"; ctx.font="11px monospace"; ctx.fillStyle=col;
+    ctx.fillText("JEV: " + s.status + (s.detail?" "+s.detail:""), W-30, H-12);
+  } else {
+    ctx.textAlign="right"; ctx.font="11px monospace"; ctx.fillStyle="#888";
+    ctx.fillText("AI: local heuristic (press J for Jev setup)", W-30, H-12);
+  }
 }
 
 // ============================================================
@@ -546,8 +708,8 @@ function aiControl(f, opp, stage, dt){
   const away = toward==="right" ? "left":"right";
 
   if(oppAttacking && inRange && Math.random()<blockChance){
-    // block: hold away
-    out[away]=true; a.act=out; a.t=Math.max(a.t,0.18); return out;
+    // block: hold away + down
+    out[away]=true; out.down=true; a.act=out; a.t=Math.max(a.t,0.18); return out;
   }
   if(inRange && Math.random()<aggro){
     // attack: choose by spacing
@@ -581,7 +743,7 @@ function resetBout(){
   timer=0; msg=""; msgSub="";
 }
 function startStage(s){
-  stage=s; resetBout(); mode="fighting";
+  stage=s; resetBout(); mode="fighting"; JevAI.reset();
 }
 function startGame(){
   stage=1; resetBout(); mode="title";
@@ -688,7 +850,9 @@ function update(dt){
   if(mode==="roundPause"){ timer-=dt; if(timer<=0) nextOrEnd(); return; }
   if(mode!=="fighting") return;
 
-  const ai=aiControl(p2,p1,stage,dt);
+  // AI control: Jev if enabled, otherwise local heuristic
+  const aiFallback = ()=> aiControl(p2,p1,stage,dt);
+  const ai = JevAI.tick(p2, p1, stage, dt, aiFallback);
   updateFighter(p1,p2,dt,null);
   updateFighter(p2,p1,dt,ai);
 
@@ -746,14 +910,14 @@ function drawTitle(){
   const lines=[
     "Move:  Arrow Left / Right      (or A / D)",
     "Jump:  Arrow Up                 Crouch: Arrow Down",
-    "Punch: F       Kick: G          Block: hold away from opponent",
+    "Punch: F       Kick: G          Block: hold back + down",
     "Low attack: hold Down.   Roundhouse: Kick + toward.   Jump kick: Kick in air.",
     "",
     "Press ENTER to begin",
   ];
   lines.forEach((l,i)=>ctx.fillText(l,W/2,230+i*26));
   ctx.fillStyle="#888"; ctx.font="12px monospace";
-  ctx.fillText("M mutes sound   P pauses", W/2, H-30);
+  ctx.fillText("M mutes sound   P pauses   J sets Jev API key", W/2, H-30);
 }
 function drawCenter(t,sub,col){
   ctx.fillStyle="rgba(0,0,0,0.5)"; ctx.fillRect(0,H/2-70,W,140);
