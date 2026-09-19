@@ -9,7 +9,7 @@ Win all four stages to become the master.
 It can ble played locally with Jev if you have an API key, but you can also play it online without just to get an impression:
 https://dagfinndybvig.github.io/Fight/
 
-Interestingly Jev offers a more varied gameplay than the traditional autoplay, so the effect is cleary visible.
+Interestingly Jev offers a more varied gameplay than the traditional autoplay, so the payoff is cleary visible.
 
 ### Controls
 
