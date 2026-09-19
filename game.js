@@ -1084,7 +1084,7 @@ function endRound(winner, award, label){
 function nextOrEnd(){
   if(p1.score>=POINTS_TO_WIN){
     if(stage>=4){ mode="champion"; Sound.win(); }
-    else if(stage===2){ startBonus(); }
+    else if(stage===2 && !autoplay){ startBonus(); }
     else { mode="stageClear"; timer=1.8; msg="STAGE CLEAR"; Sound.win(); }
   } else if(p2.score>=POINTS_TO_WIN){
     mode="gameover"; Sound.lose();
