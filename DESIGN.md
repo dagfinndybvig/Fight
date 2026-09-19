@@ -120,7 +120,7 @@ steam puffs, swishing tail.
 - Decisions: block (away + down), attack (varied by spacing), approach,
   retreat, jump, idle jitter.
 
-### Jev AI (TypeSafe System One)
+### Jev AI (TypeSafe System One) — verified working
 
 When a TypeSafe API key is set (press **J** in-game), the machine player is
 driven by [Jev](https://www.typesafe.ai):
@@ -133,6 +133,28 @@ driven by [Jev](https://www.typesafe.ai):
   back_kick, jump_kick, jump_round, wait)
 - **State sent**: compact text — distance, both stances, scores, stage,
   whether opponent is attacking, whether AI is busy.
+- **Fetch timeout**: 3s via `AbortController`; on timeout the AI falls
+  back to the local heuristic instead of freezing.
+- **Confidence floor**: 0.3 — below this, falls back to local heuristic.
+
+**CORS proxy.** The TypeSafe API does not send CORS headers, so direct
+browser-to-API calls are blocked. `server.js` is a zero-dependency Node.js
+server that serves the game on `http://localhost:3000` and proxies
+`POST /jev` to `https://api.typesafe.ai/v1/systemone` server-side,
+forwarding the `Authorization` header. The game auto-detects: when served
+over HTTP it calls `/jev`; when opened as `file://` it attempts the
+direct URL (which will fail in browsers due to CORS — use the server).
+
+**Jump attacks.** `choiceToAction()` is recomputed every frame from the
+stored Jev choice. For `jump_kick` / `jump_round`, it sets only `up` while
+grounded (launching the jump), then switches to `kick` (and `toward` for
+roundhouse) once airborne — so Jev can actually produce jump attacks
+instead of them silently becoming ground kicks.
+
+**Logging.** Every Jev poll is logged to a 200-entry ring buffer:
+`{ t, stage, ok, choice, confidence, state, probabilities, reason }`.
+Press **L** to toggle an on-canvas panel. In DevTools:
+`window.jevLog()` returns the full log, `window.jevClear()` empties it.
 
 Fallback is always visible: no key, network error, or confidence below 0.3
 falls back to the local heuristic. The HUD shows the current mode
@@ -144,6 +166,7 @@ falls back to the local heuristic. The HUD shows the current mode
 index.html   — page shell, loads style.css and game.js
 style.css    — full-screen canvas, responsive scaling
 game.js      — entire game (single file, no dependencies)
+server.js    — local Node.js server + Jev CORS proxy (run: node server.js)
 ```
 
 ### Game loop
