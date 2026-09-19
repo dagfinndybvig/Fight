@@ -116,7 +116,7 @@ const JevAI = (()=>{
     ? "/jev"
     : "https://api.typesafe.ai/v1/systemone";
   const MODEL = "jev-latest";
-  const POLL_MS = 450;          // how often to query Jev
+  const POLL_MS = 300;          // how often to query Jev
   const CONFIDENCE_FLOOR = 0.3; // below this, fall back
 
   let apiKey = localStorage.getItem("typesafe_api_key") || "";
@@ -192,15 +192,18 @@ const JevAI = (()=>{
       const oppStance = opp.state + (opp.crouching ? "(crouching)" : "") + (opp.y<GROUND_Y-1 ? "(airborne)" : "");
       const aiPos = ai.x < 150 ? "I am near my left wall" : ai.x > 810 ? "I am near my right wall" : "I am in the center of the arena";
       const oppPos = opp.x < 150 ? "opponent is near the left wall" : opp.x > 810 ? "opponent is near the right wall" : "opponent is in the center";
+      const range = d < 50 ? "close range — use elbows, low punches, or sweeps" : d < 70 ? "punch range — use punches or step in for elbow" : d < 90 ? "kick range — use high kicks, roundhouses, or low kicks" : "far range — approach or jump in with a jump kick";
+      const recent = lastChoice ? "My last move was " + lastChoice + "." : "I have not acted yet.";
       return [
         "Karate bout. Yin-yang scoring: clean hit = ippon (1pt), glancing = waza-ari (0.5pt). First to 2 points wins.",
         "Stage " + stage + " of 4. Higher stages have faster opponents.",
         "My score: " + ai.score.toFixed(1) + ". Opponent score: " + opp.score.toFixed(1) + ".",
-        "Distance between fighters: " + d + " pixels. Close range is under 60, kicking range is 60-80, punch range is 40-55.",
+        "Distance between fighters: " + d + " pixels. We are at " + range + ".",
         "My stance: " + aiStance + ". Opponent stance: " + oppStance + ".",
         aiPos + ". The " + oppPos + ".",
-        "Opponent is " + (opp.state==="attack" ? "attacking" : "not attacking") + ".",
+        "Opponent is " + (opp.state==="attack" ? "attacking — block or counter now" : "not attacking — this is my chance to strike") + ".",
         "I am " + (ai.busy ? "busy" : "free to act") + ".",
+        recent,
         style || "",
       ].join(" ");
     }
@@ -294,8 +297,8 @@ const JevAI = (()=>{
 
   // p2 instance (AI opponent) and p1 instance (autoplay)
   // Each gets a distinct tactical personality so they fight differently.
-  const p2inst = create("p2", "My fighting style: calculating counter-fighter. I circle and probe with footwork, alternating between approaching and retreating to measure distance and draw the opponent forward. I attack in bursts after retreating — step back, let them chase, then suddenly step in with a roundhouse or high kick. I love the roundhouse — it is my signature move, use it often at mid range. I also use jump kicks and jump roundhouses to close distance dramatically. Between attacks I use approach and retreat rhythmically to control range rather than standing still. When the opponent attacks I block, then immediately counter with a sweep or elbow. I mix high and low to stay unpredictable. If I am near a wall I must step forward and fight my way out — never retreat into a corner. When in striking range I attack rather than wait.");
-  const p1inst = create("p1", "My fighting style: aggressive swarmer with footwork and aerial attacks. I press forward but also back off in a rhythm — step in, throw a combination, step out, then press again. I use approach and retreat alternately to create openings rather than charging constantly. When close I throw elbows and low punches, at mid range I favor high kicks and roundhouses — the roundhouse is my favorite mid-range weapon. I frequently jump in with jump kicks and jump roundhouses to surprise the opponent and close distance fast. If the opponent retreats I pursue with jump attacks. I block when they counter, then immediately resume pressing. When I am in striking range I always attack — do not just walk forward, throw a punch or kick. If the opponent is near a wall I press the attack aggressively to corner them.");
+  const p2inst = create("p2", "My fighting style: I am a flashy counter-fighter who loves spectacular moves. I use roundhouse kicks constantly at mid range — it is my signature. I frequently jump in with jump kicks and jump roundhouses to close distance dramatically. I alternate approach and retreat to control range, but I never repeat the same move twice in a row — if I just approached, next I retreat or attack. When the opponent attacks I block, then counter with a sweep or elbow. If near a wall I step forward and fight out. When in range I attack — I do not just walk. I avoid repeating approach or retreat more than once.");
+  const p1inst = create("p1", "My fighting style: I am an aggressive aerial fighter who loves jumping attacks and roundhouses. I use jump kicks and jump roundhouses frequently to surprise the opponent. At mid range I throw roundhouses — it is my favorite weapon. At close range I use elbows and low punches. I never repeat the same move twice — if I just approached, next I throw a kick or jump. I press forward in a rhythm but mix in jumps and roundhouses constantly. When in striking range I always attack with a kick or punch, never just walk. If the opponent is near a wall I press with jump attacks and roundhouses.");
 
   return {
     ...p2inst,           // primary instance (p2) — backward compatible
