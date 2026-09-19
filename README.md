@@ -1,14 +1,6 @@
 <img width="1624" height="825" alt="fight2" src="https://github.com/user-attachments/assets/df48f75e-25bb-4318-928b-bbc2914609ad" />
 
 # Fight
-An arcade style fighting game in vanilla Javascript to be played on Pages.
-
-One player is controlled by the machine.
-
-Starting with simple AI, but the aim is to use Jev.
-
-## Gameplay
-
 Inspired by *The Way of the Exploding Fist* (1985): a one-on-one karate
 bout with yin-yang scoring. No health bar — a clean hit ends the round.
 First to two full yin-yangs wins the bout and advances to a harder stage.
