@@ -276,7 +276,7 @@ const JevAI = (()=>{
       }
       pollTimer = 0;
       inflight = true;
-      status = "waiting";
+      // keep showing "active" during fetch — no yellow flicker
       query(ai, opp, stage).then(res=>{
         inflight = false;
         if(res.confidence < CONFIDENCE_FLOOR){
