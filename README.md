@@ -6,6 +6,9 @@ bout with yin-yang scoring. No health bar — a clean hit ends the round.
 First to two full yin-yangs wins the bout and advances to a harder stage.
 Win all four stages to become the master.
 
+It can ble played locally with Jev if you have API key, but you can also play it online without just to get an impression:
+https://dagfinndybvig.github.io/Fight/
+
 ### Controls
 
 | Action | Keys |
