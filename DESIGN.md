@@ -316,7 +316,7 @@ WebAudio-synthesized SFX, no audio files:
 
 ### Music
 
-A simple 8-bit repeating loop in D major pentatonic (D E F# A B) — the
+A simple 8-bit repeating loop in D major pentatonic (D E F# A B) â€” the
 scale that gives Chinese music its characteristic sound. Two tracks:
 
 - **Melody**: 16-note square-wave sequence at 0.18s per beat
