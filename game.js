@@ -190,12 +190,15 @@ const JevAI = (()=>{
       const d = Math.round(Math.abs(opp.x - ai.x));
       const aiStance = ai.state + (ai.crouching ? "(crouching)" : "") + (ai.y<GROUND_Y-1 ? "(airborne)" : "");
       const oppStance = opp.state + (opp.crouching ? "(crouching)" : "") + (opp.y<GROUND_Y-1 ? "(airborne)" : "");
+      const aiPos = ai.x < 150 ? "I am near my left wall" : ai.x > 810 ? "I am near my right wall" : "I am in the center of the arena";
+      const oppPos = opp.x < 150 ? "opponent is near the left wall" : opp.x > 810 ? "opponent is near the right wall" : "opponent is in the center";
       return [
         "Karate bout. Yin-yang scoring: clean hit = ippon (1pt), glancing = waza-ari (0.5pt). First to 2 points wins.",
         "Stage " + stage + " of 4. Higher stages have faster opponents.",
         "My score: " + ai.score.toFixed(1) + ". Opponent score: " + opp.score.toFixed(1) + ".",
         "Distance between fighters: " + d + " pixels. Close range is under 60, kicking range is 60-80, punch range is 40-55.",
         "My stance: " + aiStance + ". Opponent stance: " + oppStance + ".",
+        aiPos + ". The " + oppPos + ".",
         "Opponent is " + (opp.state==="attack" ? "attacking" : "not attacking") + ".",
         "I am " + (ai.busy ? "busy" : "free to act") + ".",
         style || "",
@@ -291,8 +294,8 @@ const JevAI = (()=>{
 
   // p2 instance (AI opponent) and p1 instance (autoplay)
   // Each gets a distinct tactical personality so they fight differently.
-  const p2inst = create("p2", "My fighting style: calculating counter-fighter. I circle and probe with footwork, alternating between approaching and retreating to measure distance and draw the opponent forward. I attack in bursts after retreating — step back, let them chase, then suddenly step in with a roundhouse or high kick. Between attacks I use approach and retreat rhythmically to control range rather than standing still. When the opponent attacks I block, then immediately counter with a sweep or elbow. I mix high and low to stay unpredictable.");
-  const p1inst = create("p1", "My fighting style: aggressive swarmer with footwork. I press forward but also back off in a rhythm — step in, throw a combination, step out, then press again. I use approach and retreat alternately to create openings rather than charging constantly. When close I throw elbows and low punches, at mid range I favor high kicks and roundhouses. If the opponent retreats I pursue with jump attacks. I block when they counter, then immediately resume pressing.");
+  const p2inst = create("p2", "My fighting style: calculating counter-fighter. I circle and probe with footwork, alternating between approaching and retreating to measure distance and draw the opponent forward. I attack in bursts after retreating — step back, let them chase, then suddenly step in with a roundhouse or high kick. Between attacks I use approach and retreat rhythmically to control range rather than standing still. When the opponent attacks I block, then immediately counter with a sweep or elbow. I mix high and low to stay unpredictable. If I am near a wall I must step forward and fight my way out — never retreat into a corner. When in striking range I attack rather than wait.");
+  const p1inst = create("p1", "My fighting style: aggressive swarmer with footwork. I press forward but also back off in a rhythm — step in, throw a combination, step out, then press again. I use approach and retreat alternately to create openings rather than charging constantly. When close I throw elbows and low punches, at mid range I favor high kicks and roundhouses. If the opponent retreats I pursue with jump attacks. I block when they counter, then immediately resume pressing. When I am in striking range I always attack — do not just walk forward, throw a punch or kick. If the opponent is near a wall I press the attack aggressively to corner them.");
 
   return {
     ...p2inst,           // primary instance (p2) — backward compatible
