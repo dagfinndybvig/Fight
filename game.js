@@ -121,14 +121,8 @@ const JevAI = (()=>{
 
   let apiKey = localStorage.getItem("typesafe_api_key") || "";
   let enabled = !!apiKey;
-  let pollTimer = 0;
-  let inflight = false;
-  let lastChoice = null;       // Jev choice string, translated per-frame
-  let useFallback = false;      // true when last decision was a fallback
-  let status = "idle";          // idle | waiting | active | fallback
-  let statusDetail = "";
 
-  // Ring-buffer log of every Jev poll. Exposed via getLog() for DevTools.
+  // Ring-buffer log of every Jev poll. Shared across all instances.
   const LOG_MAX = 200;
   const log = [];
   function addLog(entry){
@@ -154,151 +148,169 @@ const JevAI = (()=>{
     jump_round:  "Jump toward the opponent and roundhouse kick in the air",
     wait:        "Hold position and observe",
   };
-  // map Jev choice -> button-combo. Uses abstract toward/away flags
-  // instead of pre-computing left/right, so updateFighter can resolve
-  // the direction from the current facing (which may change between
-  // the tick call and the fighter update).
-  function choiceToAction(choice, ai, opp){
-    const o = { left:false,right:false,up:false,down:false,punch:false,kick:false,toward:false,away:false };
-    const airborne = ai.y < GROUND_Y - 1;
-    switch(choice){
-      case "approach":   o.toward=true; break;
-      case "retreat":    o.away=true; break;
-      case "block":      o.away=true; o.down=true; break;
-      case "jump":       o.up=true; break;
-      case "punch_high": o.punch=true; break;
-      case "punch_low":  o.down=true; o.punch=true; break;
-      case "elbow":      o.toward=true; o.punch=true; break;
-      case "kick_high":  o.kick=true; break;
-      case "kick_low":   o.down=true; o.kick=true; break;
-      case "sweep":      o.away=true; o.down=true; o.kick=true; break;
-      case "roundhouse": o.toward=true; o.kick=true; break;
-      case "back_kick":  o.away=true; o.kick=true; break;
-      case "jump_kick":  airborne ? o.kick=true : o.up=true; break;
-      case "jump_round": airborne ? (o.kick=true, o.toward=true) : o.up=true; break;
-      case "wait":       break;
-      default:           break;
-    }
-    return o;
-  }
 
-  function buildState(ai, opp, stage){
-    const d = Math.round(Math.abs(opp.x - ai.x));
-    const aiStance = ai.state + (ai.crouching ? "(crouching)" : "") + (ai.y<GROUND_Y-1 ? "(airborne)" : "");
-    const oppStance = opp.state + (opp.crouching ? "(crouching)" : "") + (opp.y<GROUND_Y-1 ? "(airborne)" : "");
-    return [
-      "Karate bout. Yin-yang scoring: clean hit = ippon (1pt), glancing = waza-ari (0.5pt). First to 2 points wins.",
-      "Stage " + stage + " of 4. Higher stages have faster opponents.",
-      "My score: " + ai.score.toFixed(1) + ". Opponent score: " + opp.score.toFixed(1) + ".",
-      "Distance between fighters: " + d + " pixels. Close range is under 60, kicking range is 60-80, punch range is 40-55.",
-      "My stance: " + aiStance + ". Opponent stance: " + oppStance + ".",
-      "Opponent is " + (opp.state==="attack" ? "attacking" : "not attacking") + ".",
-      "I am " + (ai.busy ? "busy" : "free to act") + ".",
-    ].join(" ");
-  }
+  // ---- Factory: each instance has independent polling state ----
+  function create(id){
+    let pollTimer = 0;
+    let inflight = false;
+    let lastChoice = null;
+    let useFallback = false;
+    let status = "idle";
+    let statusDetail = "";
 
-  async function query(ai, opp, stage){
-    const stateStr = buildState(ai, opp, stage);
-    const body = {
-      model: MODEL,
-      state: stateStr,
-      questions: {
-        action: {
-          type: "choice",
-          instructions: "Which move should the fighter make right now?",
-          criteria: ACTIONS,
-        }
+    // map Jev choice -> button-combo. Uses abstract toward/away flags
+    // instead of pre-computing left/right, so updateFighter can resolve
+    // the direction from the current facing (which may change between
+    // the tick call and the fighter update).
+    function choiceToAction(choice, ai, opp){
+      const o = { left:false,right:false,up:false,down:false,punch:false,kick:false,toward:false,away:false };
+      const airborne = ai.y < GROUND_Y - 1;
+      switch(choice){
+        case "approach":   o.toward=true; break;
+        case "retreat":    o.away=true; break;
+        case "block":      o.away=true; o.down=true; break;
+        case "jump":       o.up=true; break;
+        case "punch_high": o.punch=true; break;
+        case "punch_low":  o.down=true; o.punch=true; break;
+        case "elbow":      o.toward=true; o.punch=true; break;
+        case "kick_high":  o.kick=true; break;
+        case "kick_low":   o.down=true; o.kick=true; break;
+        case "sweep":      o.away=true; o.down=true; o.kick=true; break;
+        case "roundhouse": o.toward=true; o.kick=true; break;
+        case "back_kick":  o.away=true; o.kick=true; break;
+        case "jump_kick":  airborne ? o.kick=true : o.up=true; break;
+        case "jump_round": airborne ? (o.kick=true, o.toward=true) : o.up=true; break;
+        case "wait":       break;
+        default:           break;
       }
-    };
-    const ctrl = new AbortController();
-    const timeout = setTimeout(()=>ctrl.abort(), 3000);
-    let resp;
-    try {
-      resp = await fetch(ENDPOINT, {
-        method: "POST",
-        headers: {
-          "Authorization": "Bearer " + apiKey,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(body),
-        signal: ctrl.signal,
-      });
-    } catch(e){
-      throw new Error(e.name==="AbortError" ? "timeout" : "network");
-    } finally {
-      clearTimeout(timeout);
+      return o;
     }
-    if(!resp.ok) throw new Error("HTTP " + resp.status);
-    const data = await resp.json();
-    const ans = data.answers && data.answers.action;
-    if(!ans || !ans.choice) throw new Error("no choice in response");
-    return { choice: ans.choice, confidence: ans.confidence || 0, state: stateStr, probabilities: ans.probabilities || null };
-  }
 
-  function tick(ai, opp, stage, dt, fallbackFn){
-    if(!enabled || !apiKey){
-      return fallbackFn();
+    function buildState(ai, opp, stage){
+      const d = Math.round(Math.abs(opp.x - ai.x));
+      const aiStance = ai.state + (ai.crouching ? "(crouching)" : "") + (ai.y<GROUND_Y-1 ? "(airborne)" : "");
+      const oppStance = opp.state + (opp.crouching ? "(crouching)" : "") + (opp.y<GROUND_Y-1 ? "(airborne)" : "");
+      return [
+        "Karate bout. Yin-yang scoring: clean hit = ippon (1pt), glancing = waza-ari (0.5pt). First to 2 points wins.",
+        "Stage " + stage + " of 4. Higher stages have faster opponents.",
+        "My score: " + ai.score.toFixed(1) + ". Opponent score: " + opp.score.toFixed(1) + ".",
+        "Distance between fighters: " + d + " pixels. Close range is under 60, kicking range is 60-80, punch range is 40-55.",
+        "My stance: " + aiStance + ". Opponent stance: " + oppStance + ".",
+        "Opponent is " + (opp.state==="attack" ? "attacking" : "not attacking") + ".",
+        "I am " + (ai.busy ? "busy" : "free to act") + ".",
+      ].join(" ");
     }
-    pollTimer += dt;
-    // while a query is in flight, keep acting on the current decision
-    if(inflight) {
+
+    async function query(ai, opp, stage){
+      const stateStr = buildState(ai, opp, stage);
+      const body = {
+        model: MODEL,
+        state: stateStr,
+        questions: {
+          action: {
+            type: "choice",
+            instructions: "Which move should the fighter make right now?",
+            criteria: ACTIONS,
+          }
+        }
+      };
+      const ctrl = new AbortController();
+      const timeout = setTimeout(()=>ctrl.abort(), 3000);
+      let resp;
+      try {
+        resp = await fetch(ENDPOINT, {
+          method: "POST",
+          headers: {
+            "Authorization": "Bearer " + apiKey,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(body),
+          signal: ctrl.signal,
+        });
+      } catch(e){
+        throw new Error(e.name==="AbortError" ? "timeout" : "network");
+      } finally {
+        clearTimeout(timeout);
+      }
+      if(!resp.ok) throw new Error("HTTP " + resp.status);
+      const data = await resp.json();
+      const ans = data.answers && data.answers.action;
+      if(!ans || !ans.choice) throw new Error("no choice in response");
+      return { choice: ans.choice, confidence: ans.confidence || 0, state: stateStr, probabilities: ans.probabilities || null };
+    }
+
+    function tick(ai, opp, stage, dt, fallbackFn){
+      if(!enabled || !apiKey){
+        return fallbackFn();
+      }
+      pollTimer += dt;
+      if(inflight) {
+        return useFallback ? fallbackFn()
+          : (lastChoice ? choiceToAction(lastChoice, ai, opp) : fallbackFn());
+      }
+      if(pollTimer < POLL_MS/1000 && (lastChoice || useFallback)){
+        return useFallback ? fallbackFn() : choiceToAction(lastChoice, ai, opp);
+      }
+      pollTimer = 0;
+      inflight = true;
+      status = "waiting";
+      query(ai, opp, stage).then(res=>{
+        inflight = false;
+        if(res.confidence < CONFIDENCE_FLOOR){
+          status = "fallback";
+          statusDetail = "low conf " + res.confidence.toFixed(2);
+          lastChoice = null;
+          useFallback = true;
+          addLog({ t: Date.now(), id, stage, ok: false, reason: "low_conf", choice: res.choice, confidence: res.confidence, state: res.state, probabilities: res.probabilities });
+        } else {
+          status = "active";
+          statusDetail = res.choice + " (" + res.confidence.toFixed(2) + ")";
+          lastChoice = res.choice;
+          useFallback = false;
+          addLog({ t: Date.now(), id, stage, ok: true, choice: res.choice, confidence: res.confidence, state: res.state, probabilities: res.probabilities });
+        }
+      }).catch(err=>{
+        inflight = false;
+        status = "fallback";
+        statusDetail = String(err.message || err).slice(0,30);
+        lastChoice = null;
+        useFallback = true;
+        addLog({ t: Date.now(), id, stage, ok: false, reason: String(err.message || err), choice: null, confidence: null, state: null, probabilities: null });
+      });
       return useFallback ? fallbackFn()
         : (lastChoice ? choiceToAction(lastChoice, ai, opp) : fallbackFn());
     }
-    if(pollTimer < POLL_MS/1000 && (lastChoice || useFallback)){
-      return useFallback ? fallbackFn() : choiceToAction(lastChoice, ai, opp);
-    }
-    pollTimer = 0;
-    // time to poll Jev
-    inflight = true;
-    status = "waiting";
-    query(ai, opp, stage).then(res=>{
-      inflight = false;
-      if(res.confidence < CONFIDENCE_FLOOR){
-        status = "fallback";
-        statusDetail = "low conf " + res.confidence.toFixed(2);
-        lastChoice = null;
-        useFallback = true;
-        addLog({ t: Date.now(), stage, ok: false, reason: "low_conf", choice: res.choice, confidence: res.confidence, state: res.state, probabilities: res.probabilities });
-      } else {
-        status = "active";
-        statusDetail = res.choice + " (" + res.confidence.toFixed(2) + ")";
-        lastChoice = res.choice;
-        useFallback = false;
-        addLog({ t: Date.now(), stage, ok: true, choice: res.choice, confidence: res.confidence, state: res.state, probabilities: res.probabilities });
-      }
-    }).catch(err=>{
-      inflight = false;
-      status = "fallback";
-      statusDetail = String(err.message || err).slice(0,30);
-      lastChoice = null;
-      useFallback = true;
-      addLog({ t: Date.now(), stage, ok: false, reason: String(err.message || err), choice: null, confidence: null, state: null, probabilities: null });
-    });
-    return useFallback ? fallbackFn()
-      : (lastChoice ? choiceToAction(lastChoice, ai, opp) : fallbackFn());
+
+    return {
+      tick,
+      getStatus(){ return { status, detail: statusDetail }; },
+      reset(){ pollTimer=0; inflight=false; lastChoice=null; useFallback=false; status="idle"; statusDetail=""; },
+    };
   }
 
+  // p2 instance (AI opponent) and p1 instance (autoplay)
+  const p2inst = create("p2");
+  const p1inst = create("p1");
+
   return {
-    tick,
+    ...p2inst,           // primary instance (p2) — backward compatible
+    p1: p1inst,          // second instance for autoplay mode
     isEnabled(){ return enabled; },
-    getStatus(){ return { status, detail: statusDetail }; },
     getLog(){ return log.slice(); },
     clearLog(){ log.length = 0; },
     setKey(key){
       apiKey = key || "";
       enabled = !!apiKey;
       localStorage.setItem("typesafe_api_key", apiKey);
-      // reset state
-      pollTimer=0; inflight=false; lastChoice=null; useFallback=false;
-      status = enabled?"idle":"fallback";
+      p2inst.reset(); p1inst.reset();
     },
     getKey(){ return apiKey; },
-    reset(){ pollTimer=0; inflight=false; lastChoice=null; useFallback=false; status="idle"; statusDetail=""; },
+    reset(){ p2inst.reset(); p1inst.reset(); },
   };
 })();
 // Expose for DevTools console: window.jevLog, window.jevClear
 window.jevLog = ()=>JevAI.getLog();
+window.jevClear = ()=>JevAI.clearLog();
 window.jevClear = ()=>JevAI.clearLog();
 
 
@@ -321,6 +333,7 @@ addEventListener("keydown", e=>{
   if(["ArrowLeft","ArrowRight","ArrowUp","ArrowDown","Space"].includes(e.code)) e.preventDefault();
   if(e.code==="KeyM") Sound.toggle();
   if(e.code==="KeyL") showJevLog = !showJevLog;
+  if(e.code==="Digit0"){ autoplay = !autoplay; JevAI.p1.reset(); }
   if(e.code==="KeyJ"){
     const key = prompt("Enter TypeSafe API key (leave empty to disable Jev and use local AI):", JevAI.getKey()||"");
     if(key !== null){ JevAI.setKey(key.trim()); }
@@ -751,6 +764,11 @@ function drawHUD(p1,p2,stage){
     ctx.textAlign="right"; ctx.font="11px monospace"; ctx.fillStyle="#888";
     ctx.fillText("AI: local heuristic (press J for Jev setup)", W-30, H-12);
   }
+  // autoplay indicator
+  if(autoplay){
+    ctx.textAlign="left"; ctx.font="11px monospace"; ctx.fillStyle="#fd4";
+    ctx.fillText("AUTOPLAY (0 to toggle)", 30, H-12);
+  }
 }
 
 // ============================================================
@@ -813,6 +831,7 @@ function aiControl(f, opp, stage, dt){
 // ============================================================
 let p1, p2, stage, mode, timer, msg, msgSub, pause;
 let showJevLog = false;
+let autoplay = false;
 let bull = null;   // bonus round bull object
 function resetBout(){
   p1 = makeFighter(300, 1, false); p1.name="YOU";
@@ -1098,7 +1117,10 @@ function update(dt){
   // AI control: Jev if enabled, otherwise local heuristic
   const aiFallback = ()=> aiControl(p2,p1,stage,dt);
   const ai = JevAI.tick(p2, p1, stage, dt, aiFallback);
-  updateFighter(p1,p2,dt,null);
+  // p1: Jev-controlled when autoplay is on, otherwise human input (null)
+  const p1Fallback = ()=> aiControl(p1,p2,stage,dt);
+  const p1ctl = autoplay ? JevAI.p1.tick(p1, p2, stage, dt, p1Fallback) : null;
+  updateFighter(p1,p2,dt,p1ctl);
   updateFighter(p2,p1,dt,ai);
 
   // body collision: keep fighters from overlapping
@@ -1226,7 +1248,7 @@ function drawTitle(){
   ];
   lines.forEach((l,i)=>ctx.fillText(l,W/2,230+i*26));
   ctx.fillStyle="#888"; ctx.font="12px monospace";
-  ctx.fillText("M mutes sound   P pauses   J sets Jev API key   L toggles Jev log", W/2, H-30);
+  ctx.fillText("M mutes   P pauses   J Jev key   L Jev log   0 autoplay", W/2, H-30);
 }
 function drawCenter(t,sub,col){
   ctx.fillStyle="rgba(0,0,0,0.5)"; ctx.fillRect(0,H/2-70,W,140);
