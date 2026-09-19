@@ -291,7 +291,7 @@ const JevAI = (()=>{
 
   // p2 instance (AI opponent) and p1 instance (autoplay)
   // Each gets a distinct tactical personality so they fight differently.
-  const p2inst = create("p2", "My fighting style: patient and defensive. I wait for the opponent to overcommit, then counter-attack. I favor blocks, sweeps, and back kicks. I use roundhouse only when the opponent is recovering. I retreat to create space rather than charging in. I mix up high and low attacks to stay unpredictable.");
+  const p2inst = create("p2", "My fighting style: calculated aggression. I control the spacing with footwork, staying just outside the opponent's reach and stepping in to strike when they are open. I favor roundhouse and high kicks at mid range, sweeps when they crouch, and elbows when close. I block incoming attacks and immediately counter. I do not give ground freely — I use back kicks to reposition without retreating. I vary my attacks between high and low to keep the opponent guessing.");
   const p1inst = create("p1", "My fighting style: aggressive and proactive. I close distance quickly and press the attack. I favor elbows at close range, high kicks at mid range, and jump attacks to close distance. I block only when the opponent is clearly attacking. I rarely retreat — I would rather sidestep with a back kick than give ground.");
 
   return {
