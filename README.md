@@ -31,6 +31,9 @@ First to **two full yin-yangs** wins the bout and advances to a harder stage
 
 Modifiers: hold **Down** for low attacks; **Kick + toward** for a roundhouse;
 **Kick in the air** for a jump kick; **Punch in the air** for a jump punch.
+**Punch + toward** for an elbow strike; **Kick + down + back** for a sweep;
+**Kick + back** for a back kick; **Kick + toward in the air** for a jump roundhouse.
+Sweep and elbow always score ippon if they connect, but are slow or short-range.
 `M` mutes sound, `P` pauses.
 
 ### Running

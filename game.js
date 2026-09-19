@@ -28,10 +28,14 @@ const G = GROUND_Y;
 const MOVES = {
   punchHigh:  { dur:[0.06,0.04,0.16], reach:50, hb:[G-116,G-92],  pose:"PUNCH_HIGH" },
   punchLow:   { dur:[0.06,0.04,0.16], reach:48, hb:[G-76, G-52],  pose:"PUNCH_LOW"  },
+  elbow:      { dur:[0.04,0.05,0.18], reach:38, hb:[G-96, G-72],  pose:"PUNCH_HIGH", alwaysIppon:true },
   kickHigh:   { dur:[0.10,0.05,0.24], reach:68, hb:[G-104,G-80],  pose:"KICK_HIGH"  },
   kickLow:    { dur:[0.10,0.05,0.24], reach:62, hb:[G-48, G-24],  pose:"KICK_LOW"   },
+  sweep:      { dur:[0.18,0.06,0.36], reach:64, hb:[G-36, G-12],  pose:"SWEEP",     alwaysIppon:true },
   roundhouse: { dur:[0.16,0.06,0.32], reach:76, hb:[G-88, G-56],  pose:"ROUNDHOUSE" },
+  backKick:   { dur:[0.12,0.06,0.26], reach:70, hb:[G-82, G-52],  pose:"BACK_KICK"  },
   jumpKick:   { dur:[0.08,0.06,0.20], reach:64, hb:[G-88, G-64],  pose:"JUMP_KICK"  },
+  jumpRound:  { dur:[0.10,0.07,0.22], reach:72, hb:[G-92, G-58],  pose:"JUMP_KICK"  },
   jumpPunch:  { dur:[0.05,0.04,0.14], reach:46, hb:[G-114,G-90],  pose:"PUNCH_HIGH" },
 };
 
@@ -46,6 +50,8 @@ const POSES = {
   KICK_HIGH:   { hipYoff:0,  lean:-0.14,hR:{x:-10,y:-22},hL:{x:-14,y:-28},fR:{x:52,y:-18},fL:{x:-10,y:50} },
   KICK_LOW:    { hipYoff:14, lean:0.12, hR:{x:-8,y:-18}, hL:{x:-12,y:-24},fR:{x:42,y:36}, fL:{x:-14,y:36} },
   ROUNDHOUSE:  { hipYoff:0,  lean:-0.20,hR:{x:-12,y:-20},hL:{x:-16,y:-28},fR:{x:54,y:8},  fL:{x:-12,y:50} },
+  BACK_KICK:   { hipYoff:8,  lean:0.22, hR:{x:-8,y:-14}, hL:{x:-14,y:-20},fR:{x:-52,y:18},fL:{x:12,y:42} },
+  SWEEP:       { hipYoff:30, lean:0.30, hR:{x:6,y:-4},   hL:{x:-8,y:-8},  fR:{x:52,y:38}, fL:{x:-16,y:20} },
   JUMP_KICK:   { hipYoff:0,  lean:-0.10,hR:{x:-12,y:-16},hL:{x:-16,y:-24},fR:{x:50,y:6},  fL:{x:-12,y:30} },
   JUMP_IDLE:   { hipYoff:0,  lean:0.02, hR:{x:12,y:-14}, hL:{x:-8,y:-18}, fR:{x:8,y:26},  fL:{x:-8,y:30} },
   HIT:         { hipYoff:0,  lean:-0.26,hR:{x:-14,y:-22},hL:{x:-18,y:-16},fR:{x:16,y:50}, fL:{x:-16,y:50} },
@@ -120,14 +126,18 @@ const JevAI = (()=>{
   const ACTIONS = {
     approach:    "Move toward the opponent to close distance",
     retreat:     "Step away from the opponent to create space",
-    block:       "Hold back to block incoming attacks",
+    block:       "Hold back and down to block incoming attacks",
     jump:        "Jump into the air",
     punch_high:  "Throw a high punch to the head",
     punch_low:   "Throw a low punch to the body",
+    elbow:       "Step in and strike with the elbow, very short range but always scores a full point",
     kick_high:   "Throw a high kick to the head",
-    kick_low:    "Throw a low sweep kick",
-    roundhouse:  "Throw a powerful roundhouse kick",
+    kick_low:    "Throw a low kick to the legs",
+    sweep:       "Drop low and sweep the opponent's legs, slow but always scores a full point",
+    roundhouse:  "Throw a powerful roundhouse kick, step toward and kick",
+    back_kick:   "Kick backward while stepping away, good for spacing",
     jump_kick:   "Jump and kick in the air",
+    jump_round:  "Jump toward the opponent and roundhouse kick in the air",
     wait:        "Hold position and observe",
   };
   // map Jev choice -> button-combo
@@ -138,14 +148,18 @@ const JevAI = (()=>{
     switch(choice){
       case "approach":   o[toward]=true; break;
       case "retreat":    o[away]=true; break;
-      case "block":      o[away]=true; o.down=true; break;  // holding away + down = block
+      case "block":      o[away]=true; o.down=true; break;
       case "jump":       o.up=true; break;
       case "punch_high": o.punch=true; break;
       case "punch_low":  o.down=true; o.punch=true; break;
+      case "elbow":      o[toward]=true; o.punch=true; break;
       case "kick_high":  o.kick=true; break;
       case "kick_low":   o.down=true; o.kick=true; break;
+      case "sweep":      o[away]=true; o.down=true; o.kick=true; break;
       case "roundhouse": o[toward]=true; o.kick=true; break;
+      case "back_kick":  o[away]=true; o.kick=true; break;
       case "jump_kick":  o.up=true; o.kick=true; break;
+      case "jump_round": o.up=true; o[toward]=true; o.kick=true; break;
       case "wait":       break;
       default:           break;
     }
@@ -323,14 +337,21 @@ function updateFighter(f, opp, dt, aiCtl){
 
   // attack input edges
   if(!f.busy && f.stun<=0){
+    const away = (f.facing>0 && ml && !mr) || (f.facing<0 && mr && !ml);
+    const towardDir = (f.facing>0 ? mr : ml);
     if(punch){
       if(f.y<GROUND_Y-1) startMove(f,"jumpPunch");
+      else if(towardDir) startMove(f,"elbow");
       else if(down) startMove(f,"punchLow");
       else startMove(f,"punchHigh");
     } else if(kick){
-      if(f.y<GROUND_Y-1) startMove(f,"jumpKick");
+      if(f.y<GROUND_Y-1){
+        if(towardDir) startMove(f,"jumpRound");
+        else startMove(f,"jumpKick");
+      } else if(down && away) startMove(f,"sweep");
       else if(down) startMove(f,"kickLow");
-      else if((f.facing>0 && mr)||(f.facing<0 && ml)) startMove(f,"roundhouse");
+      else if(away) startMove(f,"backKick");
+      else if(towardDir) startMove(f,"roundhouse");
       else startMove(f,"kickHigh");
     }
     if(up) tryJump(f);
@@ -347,8 +368,14 @@ function updateFighter(f, opp, dt, aiCtl){
       f.state="block";
       dir = 0;
     } else if(dir!==0 && !down){
+      const oldX = f.x;
       f.x += dir*WALK*dt;
-      f.state="walk"; f.walkPhase += dt*9*dir;
+      // hard wall: can't walk past the opponent
+      const minGap = 44;
+      if(f.facing > 0 && f.x > opp.x - minGap) f.x = opp.x - minGap;
+      if(f.facing < 0 && f.x < opp.x + minGap) f.x = opp.x + minGap;
+      if(f.x !== oldX){ f.state="walk"; f.walkPhase += dt*9*dir; }
+      else f.state="idle";
     } else if(!f.crouching){
       f.state="idle";
     }
@@ -415,7 +442,8 @@ function resolveHit(atk, def){
   // connection -> ippon or waza-ari
   let pts;
   if(def.state==="attack") pts=0.5;        // trade
-  else if(fdist <= m.reach*0.55) pts=1.0; // clean / well-timed
+  else if(m.alwaysIppon) pts=1.0;          // certain moves always ippon
+  else if(fdist <= m.reach*0.55) pts=1.0;  // clean / well-timed
   else pts=0.5;                           // glancing
   return { type:"hit", pts };
 }
@@ -713,11 +741,17 @@ function aiControl(f, opp, stage, dt){
   }
   if(inRange && Math.random()<aggro){
     // attack: choose by spacing
-    if(f.y<GROUND_Y-1){ out.kick=true; }                 // air -> jump kick
-    else if(d>72){ out.kick=true; out[toward]=true; }   // roundhouse / high kick
-    else if(Math.random()<0.4){ out.down=true; out.kick=true; } // sweep
-    else if(Math.random()<0.5){ out.kick=true; }
-    else { out.punch=true; }
+    const r = Math.random();
+    if(f.y<GROUND_Y-1){
+      if(r<0.3){ out.kick=true; out[toward]=true; }     // jump roundhouse
+      else { out.kick=true; }                            // jump kick
+    }
+    else if(d>72){ out.kick=true; out[toward]=true; }   // roundhouse
+    else if(r<0.2){ out.down=true; out[away]=true; out.kick=true; } // sweep
+    else if(r<0.35){ out[toward]=true; out.punch=true; }           // elbow
+    else if(r<0.55){ out.down=true; out.kick=true; }   // low kick
+    else if(r<0.75){ out.kick=true; }                   // high kick
+    else { out.punch=true; }                            // punch
     a.act=out; return out;
   }
   if(d>96){
@@ -1087,6 +1121,8 @@ function drawTitle(){
     "Jump:  Arrow Up                 Crouch: Arrow Down",
     "Punch: F       Kick: G          Block: hold back + down",
     "Low attack: hold Down.   Roundhouse: Kick + toward.   Jump kick: Kick in air.",
+    "Elbow: Punch + toward.   Sweep: Kick + down + back.   Back kick: Kick + back.",
+    "Jump roundhouse: Jump, then Kick + toward.",
     "",
     "Press ENTER to begin",
   ];
