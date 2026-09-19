@@ -706,6 +706,37 @@ function drawSensei(sx, sy){
   ctx.beginPath(); ctx.arc(sx, headY-s(11), s(1.5), 0, Math.PI*2); ctx.fill();
 }
 
+// 8-bit repeating Chinese scroll pattern on the floor area
+function drawScrollPattern(t){
+  const floorY = GROUND_Y + 4;
+  const floorH = H - GROUND_Y - 4;
+  if(floorH <= 0) return;
+  // tile size in pixels
+  const tw = 32, th = 16;
+  // darker overlay color derived from theme accent
+  const dim = t.accent;
+  ctx.save();
+  for(let y = 0; y < floorH; y += th){
+    for(let x = 0; x < W; x += tw){
+      const cx = x + tw/2, cy = floorY + y + th/2;
+      // checkerboard base
+      const checker = (Math.floor(x/tw) + Math.floor(y/th)) % 2 === 0;
+      ctx.fillStyle = checker ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.03)";
+      ctx.fillRect(x, floorY + y, tw, th);
+      // 8-bit cloud/scroll motif centered in each tile
+      ctx.fillStyle = "rgba(0,0,0,0.12)";
+      // simple spiral-ish scroll: 3x3 pixel block pattern
+      const px = [0,1,2,2,2,1,0,0];
+      const py = [0,0,0,1,2,2,2,1];
+      const ox = cx - 4, oy = cy - 4;
+      for(let i=0;i<px.length;i++){
+        ctx.fillRect(ox + px[i]*2, oy + py[i]*2, 2, 2);
+      }
+    }
+  }
+  ctx.restore();
+}
+
 function drawBackground(stage){
   const t=bgTheme(stage);
   const g=ctx.createLinearGradient(0,0,0,GROUND_Y);
@@ -742,9 +773,8 @@ function drawBackground(stage){
   // ground
   ctx.fillStyle=t.ground; ctx.fillRect(0,GROUND_Y,W,H-GROUND_Y);
   ctx.fillStyle=t.accent; ctx.fillRect(0,GROUND_Y,W,4);
-  // floor line texture
-  ctx.strokeStyle="rgba(0,0,0,0.12)"; ctx.lineWidth=1;
-  for(let i=0;i<10;i++){ ctx.beginPath(); ctx.moveTo(0,GROUND_Y+ i*7); ctx.lineTo(W,GROUND_Y+i*7); ctx.stroke(); }
+  // 8-bit repeating Chinese scroll score on the floor
+  drawScrollPattern(t);
 }
 
 function drawLimb(x0,y0,x1,y1,x2,y2,thick,col){
