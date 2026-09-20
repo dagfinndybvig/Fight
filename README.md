@@ -202,7 +202,7 @@ so a full bout — hundreds of polls — costs a fraction of a cent. On the
 development side, the coding agent ran on GLM-5.2 inside Mistral Vibe on
 a Pro subscription — a budget solution for a capable-enough model for
 this kind of project. Neither the game's runtime AI nor its development
-needs a frontier-model budget; the bottleneck is design, not tokens. It
+needs a frontier-model; the bottleneck is design, not tokens. It
 is the combination of these two economical solutions — a typed
 decision model for real-time control and a capable coding agent on a
 reasonable subscription — that together gives unprecedented power for pocket
