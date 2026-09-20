@@ -102,6 +102,38 @@ enter a [Jev](https://www.typesafe.ai) API key (TypeSafe System One model)
 for AI-driven decisions. Falls back to local AI when no key, on network
 error, or low confidence. See [DESIGN.md](DESIGN.md) for details.
 
+## How it works
+
+Every 300ms, for each Jev-driven fighter:
+
+1. **State** — the game builds a compact text description of the moment:
+   scores, distance in pixels, both fighters' stances (crouching,
+   airborne, attacking), arena position, whether the opponent is
+   attacking, the fighter's last move, and its current fighting style.
+2. **Question** — a single `Choice` question with 15 options (the
+   available moves) is POSTed to the TypeSafe System One API
+   (model `jev-latest`) through the local proxy.
+3. **Decision** — Jev returns the chosen move, a probability
+   distribution over all 15 options, and a confidence score. No text
+   generation — one typed round trip, small enough to fit in a game loop.
+4. **Sampling** — the game samples from the distribution with a random
+   temperature (1.6–2.4) and never repeats the previous move, so play is
+   varied rather than deterministic.
+5. **Action** — the sampled choice maps to a button combo (directions,
+   punch, kick) resolved against the fighter's current facing, exactly
+   as if a key had been pressed.
+6. **Fallback** — if confidence is below 0.3, the API times out (3s), or
+   errors, the fighter switches to the built-in heuristic AI until Jev
+   responds again.
+
+```
+game state → text → POST /jev → choice + probabilities + confidence
+           → temperature sample → button combo → fighter moves
+```
+
+Press **L** in-game to watch it live: every decision, its confidence,
+and the distribution Jev returned.
+
 ## Roadmap
 
 - [x] Core bout loop with yin-yang scoring
