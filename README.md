@@ -131,8 +131,15 @@ game state → text → POST /jev → choice + probabilities + confidence
            → temperature sample → button combo → fighter moves
 ```
 
+**Footprint** — each poll is ~340 input tokens and output is free, so at
+$0.042 per million input tokens even a long bout costs a fraction of a
+cent. In autoplay mode, two independent Jev instances poll separately,
+each with its own fighting styles (switched every 3–7 seconds), its own
+fallback state, and its own decision log entries.
+
 Press **L** in-game to watch it live: every decision, its confidence,
-and the distribution Jev returned.
+and the distribution Jev returned. In the browser console,
+`window.jevLog()` returns the last 200 decisions as data.
 
 ## Roadmap
 
