@@ -204,6 +204,6 @@ a Pro subscription — a budget solution for a capable-enough model for
 this kind of project. Neither the game's runtime AI nor its development
 needs a frontier-model; the bottleneck is design, not tokens. It
 is the combination of these two economical solutions — a typed
-decision model for real-time control and a capable coding agent on a
+decision model for real-time control and a decent coding agent on a
 reasonable subscription — that together gives unprecedented power for pocket
 money.
