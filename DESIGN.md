@@ -1,3 +1,5 @@
+<img width="1521" height="802" alt="fight_buddha" src="https://github.com/user-attachments/assets/d3e59dde-1710-40c5-9bb9-8ca4a961343f" />
+
 # Design
 
 Detailed design notes for *The Way of the Exploding Fight*.
