@@ -45,6 +45,28 @@ Then open **http://localhost:3000** in your browser, press **J**, and
 paste your TypeSafe API key (get one at [console.typesafe.ai](https://console.typesafe.ai)).
 The key is stored in `localStorage` — press **J** again to change or clear it.
 
+**Environment variable (development / programmatic use / testing):**
+instead of pressing J, set `TYPESAFE_API_KEY` before starting the server:
+
+```
+# macOS / Linux
+TYPESAFE_API_KEY=yourkey node server.js
+
+# Windows (cmd.exe)
+set TYPESAFE_API_KEY=yourkey && node server.js
+
+# Windows (PowerShell)
+$env:TYPESAFE_API_KEY="yourkey"; node server.js
+```
+
+The game detects the server-side key at startup (via `GET /jevstatus`)
+and enables Jev without a browser key. A key entered with **J** always
+takes precedence. The proxy also works for programmatic use:
+
+```
+curl -X POST http://localhost:3000/jev -H "Content-Type: application/json" -d "{\"model\":\"jev-latest\",\"state\":\"...\",\"questions\":{\"action\":{\"type\":\"choice\",\"instructions\":\"...\",\"criteria\":{\"a\":\"option a\"}}}}"
+```
+
 The HUD shows the Jev status in the bottom-right corner:
 - **green** — Jev is active and driving the AI
 - **red** — fallback to local heuristic (no key, network error, or

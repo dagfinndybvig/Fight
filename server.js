@@ -10,6 +10,10 @@ const path = require("path");
 const PORT = 3000;
 const TS_HOST = "api.typesafe.ai";
 const TS_PATH = "/v1/systemone";
+// Optional: set TYPESAFE_API_KEY to let the server inject the key for
+// development, programmatic use, and testing. A browser-supplied
+// Authorization header always takes precedence.
+const ENV_KEY = process.env.TYPESAFE_API_KEY || "";
 
 const MIME = {
   ".html": "text/html",
@@ -50,6 +54,7 @@ function proxyJev(req, res) {
     // Forward Authorization header from the browser request
     const auth = req.headers["authorization"];
     if (auth) headers["Authorization"] = auth;
+    else if (ENV_KEY) headers["Authorization"] = "Bearer " + ENV_KEY;
 
     const upstream = https.request(
       { host: TS_HOST, path: TS_PATH, method: "POST", headers },
@@ -70,6 +75,11 @@ function proxyJev(req, res) {
 
 const server = http.createServer((req, res) => {
   if (req.method === "POST" && req.url === "/jev") return proxyJev(req, res);
+  if (req.method === "GET" && req.url === "/jevstatus") {
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ serverKey: !!ENV_KEY }));
+    return;
+  }
   return serveStatic(req, res);
 });
 

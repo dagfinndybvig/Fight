@@ -197,6 +197,13 @@ const JevAI = (()=>{
 
   let apiKey = localStorage.getItem("typesafe_api_key") || "";
   let enabled = !!apiKey;
+  // Server-side key (TYPESAFE_API_KEY env var on server.js): the game
+  // polls /jevstatus once; if the server has a key it injects it into
+  // proxied requests, so no browser key is needed.
+  let serverKey = false;
+  if (location.protocol.startsWith("http")) {
+    fetch("/jevstatus").then(r=>r.json()).then(d=>{ serverKey = !!d.serverKey; }).catch(()=>{});
+  }
 
   // Ring-buffer log of every Jev poll. Shared across all instances.
   const LOG_MAX = 200;
@@ -310,7 +317,7 @@ const JevAI = (()=>{
         resp = await fetch(ENDPOINT, {
           method: "POST",
           headers: {
-            "Authorization": "Bearer " + apiKey,
+            ...(apiKey ? { "Authorization": "Bearer " + apiKey } : {}),
             "Content-Type": "application/json",
           },
           body: JSON.stringify(body),
@@ -329,7 +336,7 @@ const JevAI = (()=>{
     }
 
     function tick(ai, opp, stage, dt, fallbackFn){
-      if(!enabled || !apiKey){
+      if(!(enabled || serverKey)){
         return fallbackFn();
       }
       // style switching: randomly change fighting style every few seconds
@@ -423,7 +430,7 @@ const JevAI = (()=>{
   return {
     ...p2inst,           // primary instance (p2) — backward compatible
     p1: p1inst,          // second instance for autoplay mode
-    isEnabled(){ return enabled; },
+    isEnabled(){ return enabled || serverKey; },
     getLog(){ return log.slice(); },
     clearLog(){ log.length = 0; },
     setKey(key){
