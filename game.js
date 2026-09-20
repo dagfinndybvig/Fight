@@ -1146,6 +1146,7 @@ let p1, p2, stage, mode, timer, msg, msgSub, pause;
 let showJevLog = false;
 let autoplay = false;
 let bull = null;   // bonus round bull object
+let senseiBubble = 0;   // "Fight!" speech bubble timer (seconds)
 function resetBout(){
   p1 = makeFighter(300, 1, false); p1.name="YOU";
   p2 = makeFighter(660,-1, true);  p2.name="AI";
@@ -1153,6 +1154,7 @@ function resetBout(){
 }
 function startStage(s){
   stage=s; resetBout(); mode="fighting"; JevAI.reset();
+  senseiBubble = 2.0;   // sensei says "Fight!" at the start of each stage
   Sound.startMusic();
 }
 function startGame(){
@@ -1423,6 +1425,7 @@ function separateFighters(a, b){
 }
 
 function update(dt){
+  if(senseiBubble > 0) senseiBubble -= dt;
   if(mode==="title"||mode==="gameover"||mode==="champion") return;
   if(mode==="stageClear"){ timer-=dt; if(timer<=0) startStage(stage+1); return; }
   if(mode==="roundPause"){ timer-=dt; if(timer<=0) nextOrEnd(); return; }
@@ -1469,6 +1472,7 @@ function checkHit(atk,def){
 
 function draw(){
   drawBackground(stage);
+  drawSenseiBubble();
   if(mode==="bonusIntro"||mode==="bonusFight"||mode==="bonusResult"){
     drawFighter(p1);
     drawBull();
@@ -1541,6 +1545,56 @@ function drawJevLogPanel(){
   // footer hint
   ctx.fillStyle = "#444"; ctx.font = "10px monospace";
   ctx.fillText("console: window.jevLog()  window.jevClear()", x + 8, y + ph - 8);
+}
+
+// rounded-rect path helper for the speech bubble
+function bubbleRect(x,y,w,h,r){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);
+  ctx.arcTo(x+w,y,x+w,y+h,r);
+  ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r);
+  ctx.arcTo(x,y,x+w,y,r);
+  ctx.closePath();
+}
+
+// Speech bubble above the sensei: "Fight!" at the start of each stage
+function drawSenseiBubble(){
+  if(senseiBubble <= 0) return;
+  const elapsed = 2.0 - senseiBubble;
+  const pop = elapsed < 0.15 ? elapsed / 0.15 : 1;           // pop-in
+  const fade = senseiBubble < 0.3 ? senseiBubble / 0.3 : 1;  // fade-out
+  const a = Math.min(pop, fade);
+  const sx = 60, sy = GROUND_Y - 6;   // sensei position (see drawBackground)
+  const bx = sx + 70, by = sy - 135;  // bubble center, to the sensei's right
+  const w = 96, h = 44;
+  ctx.save();
+  ctx.globalAlpha = a;
+  ctx.translate(bx, by);
+  const s = 0.6 + 0.4 * pop;
+  ctx.scale(s, s);
+  // bubble
+  ctx.fillStyle = "#fff";
+  ctx.strokeStyle = "#222"; ctx.lineWidth = 3;
+  bubbleRect(-w/2, -h/2, w, h, 10);
+  ctx.fill(); ctx.stroke();
+  // tail pointing down toward the sensei's hat
+  ctx.beginPath();
+  ctx.moveTo(-w/2 + 14, h/2 - 2);
+  ctx.lineTo(-w/2 + 2, h/2 + 18);
+  ctx.lineTo(-w/2 + 26, h/2 - 2);
+  ctx.closePath();
+  ctx.fillStyle = "#fff"; ctx.fill();
+  ctx.strokeStyle = "#222"; ctx.stroke();
+  // hide the seam between bubble and tail
+  ctx.fillStyle = "#fff";
+  ctx.fillRect(-w/2 + 12, h/2 - 4, 16, 6);
+  // text
+  ctx.fillStyle = "#222";
+  ctx.font = "bold 22px monospace";
+  ctx.textAlign = "center";
+  ctx.fillText("Fight!", 0, 8);
+  ctx.restore();
 }
 
 function drawTitle(){
