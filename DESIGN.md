@@ -100,6 +100,10 @@ animations.
 After clearing stage 2, the **bull bonus round** triggers before stage 3
 (skipped in autoplay mode).
 
+At the start of each stage, the sensei says **"Fight!"** in a speech
+bubble: it pops in above his hat (tail pointing at him from his right
+side), holds ~2 seconds, then fades out.
+
 ## Bull bonus round
 
 - Bull charges from the right at 340 px/s.
@@ -150,6 +154,14 @@ serves the game on `http://localhost:3000` and proxies `POST /jev` to
 `Authorization` header. The game auto-detects: when served over HTTP it
 calls `/jev`; when opened as `file://` it attempts the direct URL (which
 will fail in browsers due to CORS — use the server).
+
+If `TYPESAFE_API_KEY` is set in the server's environment, the proxy
+injects it into requests that carry no browser `Authorization` header
+(a browser key always takes precedence). `GET /jevstatus` reports
+whether a server-side key is present; the game polls it once at startup
+to enable Jev without a browser key. On a hosted site (e.g. GitHub
+Pages) there is no proxy: pressing **J** warns that Jev needs local
+play, and the HUD shows "Jev needs local server".
 
 #### Architecture: instance factory
 

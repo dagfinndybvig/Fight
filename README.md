@@ -151,6 +151,9 @@ and the distribution Jev returned. In the browser console,
 - [x] CORS proxy server for local Jev play (verified)
 - [x] Autoplay mode: Jev controls both fighters
 - [x] Fighting styles with random switching and temperature sampling
+- [x] `TYPESAFE_API_KEY` env var support (dev, programmatic use, testing)
+- [x] Hosted-site warning: Jev requires local play
+- [x] Sensei "Fight!" speech bubble at the start of each stage
 
 ## Design
 
