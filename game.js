@@ -199,7 +199,7 @@ const JevAI = (()=>{
     if(log.length > LOG_MAX) log.shift();
   }
 
-  // action options sent to Jev â€” each maps to a button combo
+  // action options sent to Jev — each maps to a button combo
   const ACTIONS = {
     approach:    "Move toward the opponent to close distance",
     retreat:     "Step away from the opponent to create space",
@@ -267,7 +267,7 @@ const JevAI = (()=>{
       const oppStance = opp.state + (opp.crouching ? "(crouching)" : "") + (opp.y<GROUND_Y-1 ? "(airborne)" : "");
       const aiPos = ai.x < 150 ? "I am near my left wall" : ai.x > 810 ? "I am near my right wall" : "I am in the center of the arena";
       const oppPos = opp.x < 150 ? "opponent is near the left wall" : opp.x > 810 ? "opponent is near the right wall" : "opponent is in the center";
-      const range = d < 50 ? "close range â€” use elbows, low punches, or sweeps" : d < 70 ? "punch range â€” use punches or step in for elbow" : d < 90 ? "kick range â€” use high kicks, roundhouses, or low kicks" : "far range â€” approach quickly, do not jump";
+      const range = d < 50 ? "close range — use elbows, low punches, or sweeps" : d < 70 ? "punch range — use punches or step in for elbow" : d < 90 ? "kick range — use high kicks, roundhouses, or low kicks" : "far range — approach quickly, do not jump";
       const recent = lastChoice ? "My last move was " + lastChoice + "." : "I have not acted yet.";
       return [
         "Karate bout. Yin-yang scoring: clean hit = ippon (1pt), glancing = waza-ari (0.5pt). First to 2 points wins.",
@@ -276,7 +276,7 @@ const JevAI = (()=>{
         "Distance between fighters: " + d + " pixels. We are at " + range + ".",
         "My stance: " + aiStance + ". Opponent stance: " + oppStance + ".",
         aiPos + ". The " + oppPos + ".",
-        "Opponent is " + (opp.state==="attack" ? "attacking â€” block or counter now" : "not attacking â€” this is my chance to strike") + ".",
+        "Opponent is " + (opp.state==="attack" ? "attacking — block or counter now" : "not attacking — this is my chance to strike") + ".",
         "I am " + (ai.busy ? "busy" : "free to act") + ".",
         recent,
         activeStyle() || "",
@@ -345,7 +345,7 @@ const JevAI = (()=>{
       }
       pollTimer = 0;
       inflight = true;
-      // keep showing "active" during fetch â€” no yellow flicker
+      // keep showing "active" during fetch — no yellow flicker
       query(ai, opp, stage).then(res=>{
         inflight = false;
         if(res.confidence < CONFIDENCE_FLOOR){
@@ -403,15 +403,15 @@ const JevAI = (()=>{
   // Each fighter has two styles and randomly switches between them.
   const p2inst = create("p2", [
     "My fighting style: defensive wall. I block frequently and wait for the opponent to commit, then punish with a sweep or elbow at close range. I use back kicks to create space. I retreat in short steps to bait attacks, then step in and counter. I never jump. My favorite moves are block, sweep, and elbow. I mix high and low attacks. If near a wall I step forward to escape.",
-    "My fighting style: pressure kickboxer. I move forward steadily and throw roundhouse kicks at mid range â€” my signature move. At close range I use low punches and elbows. I rarely block, preferring to attack first. I use jump kicks occasionally to close distance fast but mostly stay grounded. My favorite moves are roundhouse, kick_high, and elbow. If the opponent is near a wall I press with roundhouses.",
+    "My fighting style: pressure kickboxer. I move forward steadily and throw roundhouse kicks at mid range — my signature move. At close range I use low punches and elbows. I rarely block, preferring to attack first. I use jump kicks occasionally to close distance fast but mostly stay grounded. My favorite moves are roundhouse, kick_high, and elbow. If the opponent is near a wall I press with roundhouses.",
   ]);
   const p1inst = create("p1", [
-    "My fighting style: relentless swarmer. I charge in and stay at close range, throwing elbows, low punches, and sweeps in rapid succession. I barely retreat â€” if the opponent backs off I pursue immediately with quick steps. I block only when I see the opponent attacking. My favorite moves are elbow, punch_low, and sweep. I never jump â€” I fight on the ground. If near a wall I press forward.",
-    "My fighting style: ranged striker. I keep the opponent at kick range and use high kicks, low kicks, and back kicks. I step in to throw a roundhouse, then step back out. I jump kick when the opponent tries to close distance. I block when pressured. My favorite moves are kick_high, back_kick, and roundhouse. I retreat to maintain spacing but never into a corner â€” I circle with back kicks instead.",
+    "My fighting style: relentless swarmer. I charge in and stay at close range, throwing elbows, low punches, and sweeps in rapid succession. I barely retreat — if the opponent backs off I pursue immediately with quick steps. I block only when I see the opponent attacking. My favorite moves are elbow, punch_low, and sweep. I never jump — I fight on the ground. If near a wall I press forward.",
+    "My fighting style: ranged striker. I keep the opponent at kick range and use high kicks, low kicks, and back kicks. I step in to throw a roundhouse, then step back out. I jump kick when the opponent tries to close distance. I block when pressured. My favorite moves are kick_high, back_kick, and roundhouse. I retreat to maintain spacing but never into a corner — I circle with back kicks instead.",
   ]);
 
   return {
-    ...p2inst,           // primary instance (p2) â€” backward compatible
+    ...p2inst,           // primary instance (p2) — backward compatible
     p1: p1inst,          // second instance for autoplay mode
     isEnabled(){ return enabled; },
     getLog(){ return log.slice(); },
@@ -1034,7 +1034,7 @@ function drawHUD(p1,p2,stage){
   // stage tag
   ctx.fillStyle="rgba(0,0,0,0.4)"; ctx.fillRect(W/2-90,12,180,30);
   ctx.fillStyle="#fff"; ctx.font="bold 16px monospace"; ctx.textAlign="center";
-  ctx.fillText("STAGE "+stage+" â€” "+bgTheme(stage).name, W/2, 33);
+  ctx.fillText("STAGE "+stage+" — "+bgTheme(stage).name, W/2, 33);
   // yin-yangs
   ctx.textAlign="left"; ctx.fillStyle=p1.isAI?"#d04a4a":"#3a78d0";
   ctx.font="bold 13px monospace"; ctx.fillText("YOU", 30, 30);

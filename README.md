@@ -6,10 +6,10 @@ bout with yin-yang scoring. No health bar — a clean hit ends the round.
 First to two full yin-yangs wins the bout and advances to a harder stage.
 Win all four stages to become the master.
 
-It can ble played locally with Jev if you have an API key, but you can also play it online without just to get an impression:
+It can be played locally with Jev if you have an API key, but you can also play it online without just to get an impression:
 https://dagfinndybvig.github.io/Fight/
 
-Interestingly Jev offers a more varied gameplay than the traditional autoplay, so the payoff is cleary visible.
+Interestingly Jev offers a more varied gameplay than the traditional autoplay, so the payoff is clearly visible.
 
 ### Controls
 
@@ -106,7 +106,7 @@ describing the current situation) and a set of typed questions (choice,
 score, or yes/no); it returns the selected option, a probability
 distribution over all options, and a confidence score.
 
-In this game, Jev is asked a `Choice` question with 14 options (the
+In this game, Jev is asked a `Choice` question with 15 options (the
 available moves) every 300ms. It returns which move to make and how
 confident it is. The game samples from the full probability distribution
 with a random temperature for variety, rather than always taking the

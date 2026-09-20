@@ -135,7 +135,7 @@ driven by [Jev](https://www.typesafe.ai):
 - **Fetch timeout**: 3s via `AbortController`; on timeout or error, falls
   back to the local heuristic instead of freezing.
 - **Confidence floor**: 0.3 — below this, falls back to local heuristic.
-- **Question type**: `Choice` with 14 options (approach, retreat, block,
+- **Question type**: `Choice` with 15 options (approach, retreat, block,
   jump, punch_high, punch_low, elbow, kick_high, kick_low, sweep, roundhouse,
   back_kick, jump_kick, jump_round, wait)
 

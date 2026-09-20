@@ -1,0 +1,13 @@
+# Dependencies
+node_modules/
+
+# Logs and local dumps
+*.log
+jobs.json
+runs.json
+runs2.json
+succ.json
+
+# OS / editor
+.DS_Store
+Thumbs.db
