@@ -50,6 +50,10 @@ The HUD shows the Jev status in the bottom-right corner:
 - **red** — fallback to local heuristic (no key, network error, or
   confidence below 0.3)
 
+On the hosted site (GitHub Pages) there is no proxy, so Jev cannot run:
+pressing **J** warns that it needs local play, and the HUD shows
+"Jev needs local server". Run `node server.js` locally to use Jev.
+
 ### Autoplay mode
 
 Press **0** to toggle autoplay. When on, Jev controls both fighters —

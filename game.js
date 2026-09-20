@@ -177,6 +177,13 @@ const Sound = (()=>{
 // game state and a Choice question. Falls back to local AI when
 // no key, network error, or low confidence.
 // ============================================================
+// True when the game is served from a remote host (e.g. GitHub Pages)
+// where the /jev proxy does not exist and Jev polls will fail.
+function isHosted(){
+  return location.protocol.startsWith("http") &&
+    !/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
+}
+
 const JevAI = (()=>{
   // Use the local proxy (/jev) when served by server.js, which forwards
   // to the TypeSafe API server-side to avoid browser CORS restrictions.
@@ -383,7 +390,10 @@ const JevAI = (()=>{
       }).catch(err=>{
         inflight = false;
         status = "fallback";
-        statusDetail = String(err.message || err).slice(0,30);
+        const msg = String(err.message || err);
+        statusDetail = (isHosted() && msg === "HTTP 404")
+          ? "needs local server (node server.js)"
+          : msg.slice(0,30);
         lastChoice = null;
         useFallback = true;
         addLog({ t: Date.now(), id, stage, ok: false, reason: String(err.message || err), choice: null, confidence: null, state: null, probabilities: null });
@@ -454,7 +464,14 @@ addEventListener("keydown", e=>{
   if(e.code==="Digit0"){ autoplay = !autoplay; JevAI.p1.reset(); }
   if(e.code==="KeyJ"){
     const key = prompt("Enter TypeSafe API key (leave empty to disable Jev and use local AI):", JevAI.getKey()||"");
-    if(key !== null){ JevAI.setKey(key.trim()); }
+    if(key !== null){
+      const trimmed = key.trim();
+      if(trimmed && isHosted() &&
+         !confirm("Jev does not work on this hosted site — it needs the local proxy (run: node server.js). Polls will fail and fall back to the local AI. Set the key anyway?")){
+        return;
+      }
+      JevAI.setKey(trimmed);
+    }
   }
 });
 addEventListener("keyup", e=>{ Keys[e.code]=false; });
@@ -1050,7 +1067,7 @@ function drawHUD(p1,p2,stage){
     ctx.fillText("JEV: " + s.status + (s.detail?" "+s.detail:""), W-30, H-12);
   } else {
     ctx.textAlign="right"; ctx.font="11px monospace"; ctx.fillStyle="#888";
-    ctx.fillText("AI: local heuristic (press J for Jev setup)", W-30, H-12);
+    ctx.fillText(isHosted() ? "AI: local heuristic (Jev needs local server)" : "AI: local heuristic (press J for Jev setup)", W-30, H-12);
   }
   // autoplay indicator
   if(autoplay){
