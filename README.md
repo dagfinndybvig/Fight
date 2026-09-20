@@ -192,3 +192,18 @@ was written by an AI coding agent running on GLM-5.2 inside
 [Mistral Vibe](https://mistral.ai), a CLI-based agentic development
 environment. The agent read the codebase, identified bugs, implemented
 features, tested iteratively, and pushed commits to this repository.
+
+### Tokenomics
+
+Both sides of this project run on deliberately small budgets. On the
+runtime side, Jev's economy is hard to beat for real-time use: output is
+free and each decision poll is ~340 input tokens at $0.042 per million,
+so a full bout — hundreds of polls — costs a fraction of a cent. On the
+development side, the coding agent ran on GLM-5.2 inside Mistral Vibe on
+a Pro subscription — a budget solution for a capable-enough model for
+this kind of project. Neither the game's runtime AI nor its development
+needs a frontier-model budget; the bottleneck is design, not tokens. It
+is the combination of these two economical solutions — a typed
+decision model for real-time control and a capable coding agent on a
+Pro subscription — that together gives unprecedented power for pocket
+money.
