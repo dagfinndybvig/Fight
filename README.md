@@ -205,5 +205,5 @@ this kind of project. Neither the game's runtime AI nor its development
 needs a frontier-model budget; the bottleneck is design, not tokens. It
 is the combination of these two economical solutions — a typed
 decision model for real-time control and a capable coding agent on a
-Pro subscription — that together gives unprecedented power for pocket
+reasonable subscription — that together gives unprecedented power for pocket
 money.
