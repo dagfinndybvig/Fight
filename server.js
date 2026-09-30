@@ -2,6 +2,11 @@
 // Minimal local server for The Way of the Exploding Fight.
 // Serves static files and proxies POST /jev -> TypeSafe System One API.
 // Usage:  node server.js   then open http://localhost:3000
+//
+// Local AI backend: set OLLAMA_MODEL (e.g. nimble:latest) to answer /jev
+// from a local Ollama model instead of the TypeSafe API. The model is
+// asked for a JSON move choice and the reply is reshaped into the Jev
+// response format, so the game needs no changes.
 const http = require("http");
 const https = require("https");
 const fs = require("fs");
@@ -14,6 +19,10 @@ const TS_PATH = "/v1/systemone";
 // development, programmatic use, and testing. A browser-supplied
 // Authorization header always takes precedence.
 const ENV_KEY = process.env.TYPESAFE_API_KEY || "";
+// Optional: set OLLAMA_MODEL (e.g. nimble:latest) to serve /jev from a
+// local Ollama model. Takes precedence over the TypeSafe proxy.
+const OLLAMA_MODEL = process.env.OLLAMA_MODEL || "";
+const OLLAMA_HOST = process.env.OLLAMA_HOST || "http://localhost:11434";
 
 const MIME = {
   ".html": "text/html",
@@ -73,11 +82,161 @@ function proxyJev(req, res) {
   });
 }
 
+// Answer a /jev request from a local Ollama model. The game sends a Jev
+// System One request: { model, state, questions: { action: { type:
+// "choice", instructions, criteria } } }. We turn that into a chat
+// prompt with a JSON-schema-constrained answer and reshape the reply
+// into the Jev response shape the game expects.
+function ollamaJev(req, res) {
+  const chunks = [];
+  req.on("data", (c) => chunks.push(c));
+  req.on("end", () => {
+    let jevReq;
+    try {
+      jevReq = JSON.parse(Buffer.concat(chunks).toString("utf8"));
+    } catch (e) {
+      res.writeHead(400, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "bad_request", detail: "invalid JSON" }));
+      return;
+    }
+    const q = jevReq.questions && jevReq.questions.action;
+    // criteria is an object {move: description} from the game, or an
+    // array of move names from hand-rolled requests.
+    const rawCriteria = q && q.criteria;
+    const instructions = (q && q.instructions) || "Which move should the fighter make right now?";
+    let moves = [];
+    let moveHelp = "";
+    if (Array.isArray(rawCriteria)) {
+      moves = rawCriteria;
+    } else if (rawCriteria && typeof rawCriteria === "object") {
+      moves = Object.keys(rawCriteria);
+      moveHelp = "Allowed moves: " + moves.map((m) => m + " (" + rawCriteria[m] + ")").join("; ") + ". ";
+    }
+    if (moves.length === 0) {
+      res.writeHead(400, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "bad_request", detail: "no criteria" }));
+      return;
+    }
+
+    const payload = {
+      model: OLLAMA_MODEL,
+      stream: false,
+      think: false,
+      messages: [
+        {
+          role: "system",
+          content:
+            "You are the AI controller for a one-on-one karate game. " +
+            "You are given the current game state and must pick exactly one move. " +
+            moveHelp +
+            instructions + " " +
+            "Answer only with JSON: {\"choice\": \"<one of the allowed moves>\", \"confidence\": <0..1>}.",
+        },
+        { role: "user", content: String(jevReq.state || "") },
+      ],
+      format: {
+        type: "object",
+        properties: {
+          choice: { type: "string", enum: moves },
+          confidence: { type: "number" },
+        },
+        required: ["choice"],
+      },
+      options: { num_predict: 64, temperature: 0.8 },
+    };
+    const body = JSON.stringify(payload);
+    const upstream = http.request(
+      {
+        host: "localhost",
+        port: new URL(OLLAMA_HOST).port || 11434,
+        path: "/api/chat",
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(body) },
+      },
+      (up) => {
+        const parts = [];
+        up.on("data", (d) => parts.push(d));
+        up.on("end", () => {
+          if (up.statusCode !== 200) {
+            res.writeHead(502, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ error: "ollama_error", detail: "HTTP " + up.statusCode }));
+            return;
+          }
+          let reply;
+          try {
+            reply = JSON.parse(Buffer.concat(parts).toString("utf8"));
+          } catch (e) {
+            res.writeHead(502, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ error: "ollama_error", detail: "invalid reply" }));
+            return;
+          }
+          let answer;
+          try {
+            answer = JSON.parse(reply.message && reply.message.content || "{}");
+          } catch (e) {
+            answer = {};
+          }
+          const choice = moves.includes(answer.choice) ? answer.choice : moves[0];
+          const confidence =
+            typeof answer.confidence === "number" && answer.confidence > 0 && answer.confidence <= 1
+              ? answer.confidence
+              : 0.9;
+          // Synthesize a peaked distribution over the allowed moves so the
+          // game's temperature sampling keeps play varied.
+          const probabilities = {};
+          const rest = moves.filter((c) => c !== choice);
+          const share = 0.5 / Math.max(rest.length, 1);
+          probabilities[choice] = rest.length > 0 ? 0.5 : 1;
+          for (const c of rest) probabilities[c] = share;
+          res.writeHead(200, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({
+            answers: {
+              action: { choice, confidence, probabilities },
+            },
+          }));
+        });
+      }
+    );
+    upstream.on("error", (e) => {
+      res.writeHead(502, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "ollama_error", detail: String(e.message) }));
+    });
+    upstream.end(body);
+  });
+}
+
+// Fire one tiny generation at startup so the model is loaded into memory
+// before the first game poll (a cold load can take tens of seconds).
+function warmOllama() {
+  const body = JSON.stringify({
+    model: OLLAMA_MODEL,
+    stream: false,
+    think: false,
+    messages: [{ role: "user", content: "OK" }],
+    options: { num_predict: 1 },
+  });
+  const req = http.request(
+    {
+      host: "localhost",
+      port: new URL(OLLAMA_HOST).port || 11434,
+      path: "/api/chat",
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(body) },
+    },
+    (up) => { up.resume(); }
+  );
+  req.on("error", () => {});
+  req.end(body);
+}
+
 const server = http.createServer((req, res) => {
-  if (req.method === "POST" && req.url === "/jev") return proxyJev(req, res);
+  if (req.method === "POST" && req.url === "/jev") {
+    if (OLLAMA_MODEL) return ollamaJev(req, res);
+    return proxyJev(req, res);
+  }
   if (req.method === "GET" && req.url === "/jevstatus") {
     res.writeHead(200, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ serverKey: !!ENV_KEY }));
+    res.end(JSON.stringify({ serverKey: !!ENV_KEY || !!OLLAMA_MODEL, backend: OLLAMA_MODEL ? "ollama:" + OLLAMA_MODEL : "typesafe" }));
     return;
   }
   return serveStatic(req, res);
@@ -86,5 +245,10 @@ const server = http.createServer((req, res) => {
 server.listen(PORT, () => {
   console.log("The Way of the Exploding Fight");
   console.log("Open http://localhost:" + PORT);
-  console.log("Jev proxy: POST /jev -> https://" + TS_HOST + TS_PATH);
+  if (OLLAMA_MODEL) {
+    console.log("AI backend: Ollama model " + OLLAMA_MODEL + " at " + OLLAMA_HOST);
+    warmOllama();
+  } else {
+    console.log("Jev proxy: POST /jev -> https://" + TS_HOST + TS_PATH);
+  }
 });

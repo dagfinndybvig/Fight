@@ -24,6 +24,8 @@ Interestingly Jev offers a more varied gameplay than the traditional autoplay, s
 
 11 moves total — punch/kick variants, elbow, sweep, roundhouse, back kick,
 jump attacks. See [DESIGN.md](DESIGN.md) for the full move list and mechanics.
+To drive the AI with a local Ollama model instead of the Jev API, see
+[OLLAMA.md](OLLAMA.md).
 
 `M` mutes sound, `P` pauses, `J` sets the Jev API key, `L` toggles the
 Jev log panel, `0` toggles autoplay.
@@ -32,6 +34,25 @@ Jev log panel, `0` toggles autoplay.
 
 **Without Jev (local AI only):** open `index.html` directly in a browser,
 or deploy the folder to GitHub Pages. No build step, no external assets.
+
+**With a local Ollama model (no API key needed):** if you have
+[Ollama](https://ollama.com) installed, the server can answer the AI
+polls from a local model instead of the TypeSafe API. Start the server
+with `OLLAMA_MODEL` set:
+
+```
+# Windows (cmd.exe)
+set OLLAMA_MODEL=nimble:latest && node server.js
+
+# macOS / Linux
+OLLAMA_MODEL=nimble:latest node server.js
+```
+
+The model is asked for a JSON move choice (constrained to the 15 legal
+moves) and the reply is reshaped into the Jev response format, so the
+game needs no changes. The server pre-warms the model at startup so the
+first poll is not a cold load. `OLLAMA_HOST` (default
+`http://localhost:11434`) points at a different Ollama instance.
 
 **With Jev AI (verified working):** the TypeSafe API does not send CORS
 headers, so browser-to-API calls are blocked. A zero-dependency Node.js
