@@ -79,7 +79,7 @@ difference between Jev and the local backend.
 | Variable | Default | Purpose |
 | --- | --- | --- |
 | `OLLAMA_MODEL` | *(unset)* | Model name to serve `/jev` from. When set, the Ollama backend takes precedence over the TypeSafe proxy. |
-| `OLLAMA_HOST` | `http://localhost:11434` | Ollama instance to call (only the port is used). |
+| `OLLAMA_HOST` | `http://localhost:11434` | Ollama instance to call (hostname and port). Point it at another machine to use a remote Ollama. |
 
 `TYPESAFE_API_KEY` still works as before; if both are set, the Ollama
 backend wins. A browser-supplied key (press **J**) is only used by the
@@ -115,9 +115,14 @@ well inside the game's 3s timeout.
 - **HUD shows red / "fallback"** — the model is still loading, Ollama is
   not running, or the reply was too slow. The game retries every 300ms
   and recovers automatically once the model responds.
-- **`ollama_error` in the log panel** — check that Ollama is up
+- **`HTTP 502` in the log panel** — the server could not reach Ollama or
+  got an invalid reply. Check that Ollama is up
   (`curl http://localhost:11434/api/tags`) and that the model name in
-  `OLLAMA_MODEL` matches an installed model exactly.
+  `OLLAMA_MODEL` matches an installed model exactly. The server console
+  shows the backend it is using.
+- **Fallback after a pause** — Ollama unloads models after ~5 minutes
+  idle. The first polls after a break hit a cold load and may time out;
+  the game recovers automatically once the model is loaded again.
 - **Slow polls** — smaller models (or a lower quantization) respond
   faster. The game falls back to its built-in heuristic AI whenever a
   poll exceeds 3 seconds, so an overloaded machine degrades gracefully

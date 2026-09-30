@@ -23,6 +23,7 @@ const ENV_KEY = process.env.TYPESAFE_API_KEY || "";
 // local Ollama model. Takes precedence over the TypeSafe proxy.
 const OLLAMA_MODEL = process.env.OLLAMA_MODEL || "";
 const OLLAMA_HOST = process.env.OLLAMA_HOST || "http://localhost:11434";
+const OLLAMA_URL = new URL(OLLAMA_HOST);
 
 const MIME = {
   ".html": "text/html",
@@ -147,8 +148,8 @@ function ollamaJev(req, res) {
     const body = JSON.stringify(payload);
     const upstream = http.request(
       {
-        host: "localhost",
-        port: new URL(OLLAMA_HOST).port || 11434,
+        host: OLLAMA_URL.hostname,
+        port: OLLAMA_URL.port || 11434,
         path: "/api/chat",
         method: "POST",
         headers: { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(body) },
@@ -217,8 +218,8 @@ function warmOllama() {
   });
   const req = http.request(
     {
-      host: "localhost",
-      port: new URL(OLLAMA_HOST).port || 11434,
+      host: OLLAMA_URL.hostname,
+      port: OLLAMA_URL.port || 11434,
       path: "/api/chat",
       method: "POST",
       headers: { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(body) },
