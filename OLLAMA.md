@@ -7,9 +7,11 @@ decision polls.
 
 ## Prerequisites
 
-1. [Ollama](https://ollama.com) installed and running (it starts
+1. [Node.js](https://nodejs.org) installed (the server uses built-ins
+   only — no npm install needed).
+2. [Ollama](https://ollama.com) installed and running (it starts
    automatically on most installs).
-2. A model pulled, e.g.:
+3. A model pulled, e.g.:
 
 ```
 ollama pull nimble:latest
@@ -20,7 +22,14 @@ Q8_0) is what this setup was tested with.
 
 ## Starting the server
 
-Set `OLLAMA_MODEL` when starting the proxy server:
+With Ollama installed and at least one model pulled, just start the
+server — it auto-detects the first installed model:
+
+```
+node server.js
+```
+
+To pick a specific model, set `OLLAMA_MODEL`:
 
 ```
 # Windows (cmd.exe)
@@ -35,12 +44,19 @@ OLLAMA_MODEL=nimble:latest node server.js
 
 Then open **http://localhost:3000** in your browser. The AI opponent is
 active immediately — no key entry needed. Press **0** to toggle autoplay
-(nimble controls both fighters), or fight the AI yourself.
+(the model controls both fighters), or fight the AI yourself.
 
 The startup log confirms the backend:
 
 ```
 AI backend: Ollama model nimble:latest at http://localhost:11434
+```
+
+or, with auto-detection:
+
+```
+No API key set; looking for a local Ollama instance...
+AI backend: no API key set, using local Ollama model nimble:latest at http://localhost:11434
 ```
 
 ## How it works
@@ -78,13 +94,14 @@ difference between Jev and the local backend.
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
-| `OLLAMA_MODEL` | *(unset)* | Model name to serve `/jev` from. When set, the Ollama backend takes precedence over the TypeSafe proxy. |
+| `OLLAMA_MODEL` | *(auto-detected)* | Specific model to serve `/jev` from. When set, it takes precedence over the TypeSafe proxy. When unset and no API key is configured, the first installed Ollama model is auto-detected at startup. |
 | `OLLAMA_HOST` | `http://localhost:11434` | Ollama instance to call (protocol, hostname, and port). Point it at another machine to use a remote Ollama — `https://` is supported. |
 | `HOST` | `127.0.0.1` | Network address the game server binds to. Set `0.0.0.0` to play from other devices on your LAN. |
 
-`TYPESAFE_API_KEY` still works as before; if both are set, the Ollama
-backend wins. A browser-supplied key (press **J**) is only used by the
-TypeSafe proxy path.
+Backend precedence: an explicit `OLLAMA_MODEL` wins, then a configured
+`TYPESAFE_API_KEY` (TypeSafe proxy), then auto-detection of the first
+installed Ollama model. A browser-supplied key (press **J**) is only
+used by the TypeSafe proxy path.
 
 ## Verifying
 

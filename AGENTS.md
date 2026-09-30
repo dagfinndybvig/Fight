@@ -97,9 +97,12 @@ buildState() → text → POST /jev → {choice, confidence, probabilities}
 
 ### Ollama backend
 
-- `OLLAMA_MODEL` (e.g. `nimble:latest`) selects the model;
+- `OLLAMA_MODEL` (e.g. `nimble:latest`) selects a specific model;
   `OLLAMA_HOST` (default `http://localhost:11434`) selects the instance
   (protocol, hostname, and port are honored — `https://` works).
+- Backend precedence: explicit `OLLAMA_MODEL` > `TYPESAFE_API_KEY`
+  (TypeSafe proxy) > auto-detection of the first installed Ollama model
+  at startup (only when no key is configured).
 - The server binds `127.0.0.1` by default so the game and any injected
   API key are not exposed to the LAN; set `HOST=0.0.0.0` to serve the
   network.

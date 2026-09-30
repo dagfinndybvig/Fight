@@ -38,8 +38,14 @@ For a real AI opponent without an API key, use the Ollama option below.
 
 **With a local Ollama model (no API key needed):** if you have
 [Ollama](https://ollama.com) installed, the server can answer the AI
-polls from a local model instead of the TypeSafe API. Start the server
-with `OLLAMA_MODEL` set:
+polls from a local model instead of the TypeSafe API. Just start it —
+the first installed model is auto-detected:
+
+```
+node server.js
+```
+
+To pick a specific model, set `OLLAMA_MODEL`:
 
 ```
 # Windows (cmd.exe)

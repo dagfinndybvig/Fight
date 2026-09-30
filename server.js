@@ -19,9 +19,10 @@ const TS_PATH = "/v1/systemone";
 // development, programmatic use, and testing. A browser-supplied
 // Authorization header always takes precedence.
 const ENV_KEY = process.env.TYPESAFE_API_KEY || "";
-// Optional: set OLLAMA_MODEL (e.g. nimble:latest) to serve /jev from a
-// local Ollama model. Takes precedence over the TypeSafe proxy.
-const OLLAMA_MODEL = process.env.OLLAMA_MODEL || "";
+// Optional: set OLLAMA_MODEL to serve /jev from a specific local Ollama
+// model. When unset and no API key is configured, the server
+// auto-detects the first installed model at startup.
+let OLLAMA_MODEL = process.env.OLLAMA_MODEL || "";
 const OLLAMA_HOST = process.env.OLLAMA_HOST || "http://localhost:11434";
 const OLLAMA_URL = new URL(OLLAMA_HOST);
 // Bind to loopback by default so the game and any injected API key are
@@ -104,6 +105,49 @@ function ollamaPost(body, onReply) {
   req.on("error", () => {});
   req.end(body);
   return req;
+}
+
+// GET a path from the Ollama API (same host/protocol selection).
+function ollamaGet(path, onReply) {
+  const isTLS = OLLAMA_URL.protocol === "https:";
+  const lib = isTLS ? https : http;
+  const req = lib.request(
+    {
+      host: OLLAMA_URL.hostname,
+      port: OLLAMA_URL.port || (isTLS ? 443 : 11434),
+      path: path,
+      method: "GET",
+    },
+    onReply
+  );
+  req.on("error", () => {});
+  req.end();
+  return req;
+}
+
+// With no explicit model and no API key, use the first installed Ollama
+// model so `node server.js` works out of the box on any machine with
+// Ollama installed.
+function autoDetectOllama() {
+  ollamaGet("/api/tags", (up) => {
+    const parts = [];
+    up.on("data", (d) => parts.push(d));
+    up.on("end", () => {
+      if (up.statusCode !== 200) return;
+      let data;
+      try {
+        data = JSON.parse(Buffer.concat(parts).toString("utf8"));
+      } catch (e) {
+        return;
+      }
+      const first = data.models && data.models[0] && data.models[0].name;
+      if (first) {
+        OLLAMA_MODEL = first;
+        console.log("AI backend: no API key set, using local Ollama model " + OLLAMA_MODEL + " at " + OLLAMA_HOST);
+        warmOllama();
+      }
+    });
+  });
 }
 
 // Answer a /jev request from a local Ollama model. The game sends a Jev
@@ -252,7 +296,10 @@ server.listen(PORT, HOST, () => {
   if (OLLAMA_MODEL) {
     console.log("AI backend: Ollama model " + OLLAMA_MODEL + " at " + OLLAMA_HOST);
     warmOllama();
-  } else {
+  } else if (ENV_KEY) {
     console.log("Jev proxy: POST /jev -> https://" + TS_HOST + TS_PATH);
+  } else {
+    console.log("No API key set; looking for a local Ollama instance...");
+    autoDetectOllama();
   }
 });
