@@ -6,7 +6,7 @@ bout with yin-yang scoring. No health bar — a clean hit ends the round.
 First to two full yin-yangs wins the bout and advances to a harder stage.
 Win all four stages to become the master.
 
-It can be played locally with Jev if you have an API key, but you can also play it online without just to get an impression:
+It can be played locally with Jev if you have an API key, with a Jev-like local model via [Ollama](https://ollama.com) (no API key needed — see [OLLAMA.md](OLLAMA.md)), or online without any AI just to get an impression:
 https://dagfinndybvig.github.io/Fight/
 
 Interestingly Jev offers a more varied gameplay than the traditional autoplay, so the payoff is clearly visible.
@@ -32,8 +32,9 @@ Jev log panel, `0` toggles autoplay.
 
 ### Running
 
-**Without Jev (local AI only):** open `index.html` directly in a browser,
+**Without AI (heuristic opponent only):** open `index.html` directly in a browser,
 or deploy the folder to GitHub Pages. No build step, no external assets.
+For a real AI opponent without an API key, use the Ollama option below.
 
 **With a local Ollama model (no API key needed):** if you have
 [Ollama](https://ollama.com) installed, the server can answer the AI
@@ -118,9 +119,12 @@ full 200-entry ring buffer and `window.jevClear()` empties it.
 
 ## AI
 
-The machine player uses a local heuristic AI by default. Press **J** to
-enter a [Jev](https://www.typesafe.ai) API key (TypeSafe System One model)
-for AI-driven decisions. Falls back to local AI when no key, on network
+The machine player uses a local heuristic AI by default. For AI-driven
+decisions you have two options: a local Jev-like model via
+[Ollama](https://ollama.com) (no API key — see [OLLAMA.md](OLLAMA.md)),
+or the TypeSafe Jev API: press **J** to
+enter a [Jev](https://www.typesafe.ai) API key (TypeSafe System One model).
+Both fall back to the local heuristic when no backend is configured, on network
 error, or low confidence. See [DESIGN.md](DESIGN.md) for details.
 
 ## How it works
@@ -184,7 +188,9 @@ and constants — are in [DESIGN.md](DESIGN.md).
 ## Agentic setup
 
 The AI opponent (and autoplay mode) is driven by
-[Jev](https://www.typesafe.ai), TypeSafe's System One model.
+[Jev](https://www.typesafe.ai), TypeSafe's System One model — or by a
+local Jev-like model via [Ollama](https://ollama.com), which answers the
+same decision polls on your own machine (see [OLLAMA.md](OLLAMA.md)).
 
 ### Jev
 
