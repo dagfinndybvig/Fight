@@ -201,8 +201,9 @@ const JevAI = (()=>{
   // polls /jevstatus once; if the server has a key it injects it into
   // proxied requests, so no browser key is needed.
   let serverKey = false;
+  let serverBackend = "";  // "ollama:<model>" or "typesafe", from /jevstatus
   if (location.protocol.startsWith("http")) {
-    fetch("/jevstatus").then(r=>r.json()).then(d=>{ serverKey = !!d.serverKey; }).catch(()=>{});
+    fetch("/jevstatus").then(r=>r.json()).then(d=>{ serverKey = !!d.serverKey; serverBackend = d.backend || ""; }).catch(()=>{});
   }
 
   // Ring-buffer log of every Jev poll. Shared across all instances.
@@ -431,6 +432,7 @@ const JevAI = (()=>{
     ...p2inst,           // primary instance (p2) — backward compatible
     p1: p1inst,          // second instance for autoplay mode
     isEnabled(){ return enabled || serverKey; },
+    getBackend(){ return serverBackend; },
     getLog(){ return log.slice(); },
     clearLog(){ log.length = 0; },
     setKey(key){
@@ -1071,7 +1073,8 @@ function drawHUD(p1,p2,stage){
     const s = JevAI.getStatus();
     const col = s.status==="active" ? "#4f4" : "#f66";
     ctx.textAlign="right"; ctx.font="11px monospace"; ctx.fillStyle=col;
-    ctx.fillText("JEV: " + s.status + (s.detail?" "+s.detail:""), W-30, H-12);
+    const b = JevAI.getBackend(); const label = b.indexOf("ollama:")===0 ? "OLLAMA "+b.slice(7) : (b==="typesafe" ? "TYPESAFE" : "JEV");
+    ctx.fillText(label + ": " + s.status + (s.detail?" "+s.detail:""), W-30, H-12);
   } else {
     ctx.textAlign="right"; ctx.font="11px monospace"; ctx.fillStyle="#888";
     ctx.fillText(isHosted() ? "AI: local heuristic (Jev needs local server)" : "AI: local heuristic (press J for Jev setup)", W-30, H-12);
