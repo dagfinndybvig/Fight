@@ -152,8 +152,31 @@ curl -X POST http://localhost:3000/jev -H "Content-Type: application/json" -d "{
 ```
 
 In native mode the probabilities are the model's real decision
-distribution, not a placeholder. Measured latency with `nimble:latest`
-after warm-up is ~0.4s per poll, well inside the game's 3s timeout.
+distribution, not a placeholder. Latency figures are in the
+[Latency](#latency) section below.
+
+## Latency
+
+Measured with `nimble:latest` (9B, Q8_0) in native mode, with the
+game's 300ms poll spacing:
+
+| Situation | Latency |
+| --- | --- |
+| Warm decision | ~100–130ms |
+| First poll after an idle pause | ~300ms |
+| Back-to-back requests (no spacing) | ~390ms — Ollama queues them |
+
+All are far inside the game's 3s timeout. The warm figure matches
+Ollama's published ~91ms for nimble on an M5 Max, and is below the
+300ms poll interval — so the AI re-decides at the game's full cadence
+with fresh state every tick. This is why local play feels more
+reactive than the cloud API, where the network round trip pushes
+latency beyond the poll interval.
+
+Your own numbers are visible in-game: press **L** and read the latency
+column (ms per decision), or export with `window.jevLog()` and average
+the `duration` field. Note the first decision after a cold load spikes
+(everything does) and error entries carry no duration.
 
 ## Troubleshooting
 

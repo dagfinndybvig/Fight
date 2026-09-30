@@ -269,6 +269,31 @@ bonus round is skipped in autoplay (goes straight to stage clear). The
 HUD shows a yellow `AUTOPLAY (0 to toggle)` indicator in the bottom-left,
 and the top-left score label reads `YOU (AI)` while autoplay is on.
 
+### The game as a decision-model test harness
+
+The bout is a fixed, repeatable decision loop: the same state format,
+the same 15-option choice question, every 300ms. That makes the game a
+small bench for Jev-style decision models beyond its own entertainment
+value:
+
+- Backends are interchangeable behind one typed contract — cloud Jev,
+  Ollama's native `/v1/systemone`, or a chat adapter — with the HUD
+  naming which is playing, down to the Ollama version and mode.
+- Every decision is logged with choice, confidence, distribution, and
+  poll latency (the **L** panel; `window.jevLog()` for data), so
+  behavior differences between models are observable, not anecdotal.
+- Autoplay runs the active backend against itself through two
+  independent instances with different fighting styles — equal models
+  produce even bouts, and a mismatch shows within a round.
+- Fallback rules are strict and visible (0.3 confidence floor, 3s
+  timeout, HTTP errors → heuristic AI, red HUD), so a weak model
+  degrades instead of breaking the loop.
+
+Measured reference (nimble 9B, Q8_0, native mode, 300ms poll
+spacing): ~100–130ms per warm decision — below the poll interval, so
+the AI re-decides every tick. First poll after idle ~300ms; unspaced
+back-to-back requests queue to ~390ms.
+
 ### Logging
 
 Every Jev poll is logged to a 200-entry ring buffer:

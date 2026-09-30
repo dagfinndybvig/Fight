@@ -123,7 +123,14 @@ buildState() → text → POST /jev → {choice, confidence, probabilities}
 - The reply is JSON-schema-constrained (`format`, `think:false`,
   `num_predict:64`) and reshaped into
   `{answers:{action:{choice, confidence, probabilities}}}`.
-- Measured latency after warm-up: ~0.4s per poll (nimble:latest, 9B Q8_0).
+- Measured latency (nimble 9B, Q8_0, native, 300ms poll spacing):
+  ~100-130ms warm, ~300ms after idle, ~390ms when requests queue
+  back-to-back — all inside the 3s timeout. Per-poll latency is logged
+  in the `duration` field and shown in the L panel.
+- The game doubles as a decision-model test harness: fixed state
+  format, fixed 15-option question, per-decision telemetry, self-play
+  in autoplay. Keep the state format stable when changing
+  `buildState()` — it is the benchmark contract.
 
 ## Game mechanics essentials
 

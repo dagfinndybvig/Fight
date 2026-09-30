@@ -9,7 +9,7 @@ Win all four stages to become the master.
 It can be played locally with Jev if you have an API key, with a Jev-like local model via [Ollama](https://ollama.com) (no API key needed — see [OLLAMA.md](OLLAMA.md)), or online without any AI just to get an impression:
 https://dagfinndybvig.github.io/Fight/
 
-Interestingly Jev offers a more varied gameplay than the traditional autoplay, so the payoff is clearly visible.
+Interestingly Jev offers a more varied gameplay than the traditional autoplay, so the payoff is clearly visible. The game also doubles as a small test harness for Jev-style decision models — see [A test harness for decision models](#a-test-harness-for-decision-models).
 
 ### Controls
 
@@ -147,6 +147,31 @@ Which backend is playing, and how to get it:
 | Built-in heuristic | (AI: local heuristic) | Nothing needed — this is also the automatic fallback |
 
 Precedence: `OLLAMA_MODEL` > `TYPESAFE_API_KEY` > auto-detected Ollama model. With Ollama 0.35+, decisions come from Ollama's native Jev-style `/v1/systemone` endpoint (real probability distributions); older versions use a chat adapter. The HUD label names the active backend so you always know who is playing.
+
+### A test harness for decision models
+
+The fight is a repeatable decision loop: same state format, the same 15
+options, one typed question every 300ms — which makes the game a small
+bench for Jev-style decision models:
+
+- **Swap models** — set `OLLAMA_MODEL` to compare nimble, `tev1`, or
+  `tev1:0.8b` on identical situations; the HUD names the model, Ollama
+  version, and decision mode in play.
+- **Per-decision telemetry** — press **L** for each fighter's choice,
+  confidence, the full probability distribution, and poll latency;
+  `window.jevLog()` exports the last 200 decisions as data.
+- **Self-play** — autoplay pits the active backend against itself
+  (two independent instances, different fighting styles). Equal models
+  produce even bouts; a mismatch shows within one round.
+- **Strict, visible fallback** — under 0.3 confidence, over 3s, or on
+  any error the fighter switches to the built-in heuristic. A weak
+  model doesn't freeze the loop; it just fights worse — and the HUD
+  goes red while it does.
+
+Measured on the reference machine (nimble 9B, Q8_0, native mode):
+~100–130ms per decision warm — inside the 300ms loop, so the AI
+re-decides at the game's full cadence. Details in
+[OLLAMA.md](OLLAMA.md).
 
 ## How it works
 
