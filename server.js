@@ -29,6 +29,9 @@ let OLLAMA_MODEL = process.env.OLLAMA_MODEL || "";
 // (Ollama 0.35+). Probed at startup; null means not probed yet — the
 // first /jev request tries native and falls back on 404.
 let nativeDecisions = null;
+// Ollama software version (from GET /api/version), reported to the game
+// via /jevstatus and shown in the HUD.
+let ollamaVersion = "";
 const OLLAMA_HOST = process.env.OLLAMA_HOST || "http://localhost:11434";
 const OLLAMA_URL = new URL(OLLAMA_HOST);
 // Bind to loopback by default so the game and any injected API key are
@@ -131,6 +134,22 @@ function ollamaGet(path, onReply) {
   return req;
 }
 
+// Fetch the Ollama software version so the HUD can display exactly
+// what is running.
+function fetchOllamaVersion() {
+  ollamaGet("/api/version", (up) => {
+    const parts = [];
+    up.on("data", (d) => parts.push(d));
+    up.on("end", () => {
+      if (up.statusCode !== 200) return;
+      try {
+        const v = JSON.parse(Buffer.concat(parts).toString("utf8")).version;
+        if (v) { ollamaVersion = v; console.log("Ollama version: " + v); }
+      } catch (e) {}
+    });
+  });
+}
+
 // With no explicit model and no API key, use the first installed Ollama
 // model so `node server.js` works out of the box on any machine with
 // Ollama installed.
@@ -150,6 +169,7 @@ function autoDetectOllama() {
       if (first) {
         OLLAMA_MODEL = first;
         console.log("AI backend: no API key set, using local Ollama model " + OLLAMA_MODEL + " at " + OLLAMA_HOST);
+        fetchOllamaVersion();
         warmOllama();
       }
     });
@@ -341,6 +361,7 @@ const server = http.createServer((req, res) => {
       serverKey: !!ENV_KEY || !!OLLAMA_MODEL,
       backend: OLLAMA_MODEL ? "ollama:" + OLLAMA_MODEL : "typesafe",
       mode: OLLAMA_MODEL ? (nativeDecisions === false ? "chat" : "native") : "typesafe",
+      version: ollamaVersion,
     }));
     return;
   }
@@ -352,6 +373,7 @@ server.listen(PORT, HOST, () => {
   console.log("Open http://" + HOST + ":" + PORT);
   if (OLLAMA_MODEL) {
     console.log("AI backend: Ollama model " + OLLAMA_MODEL + " at " + OLLAMA_HOST);
+    fetchOllamaVersion();
     warmOllama();
   } else if (ENV_KEY) {
     console.log("Jev proxy: POST /jev -> https://" + TS_HOST + TS_PATH);

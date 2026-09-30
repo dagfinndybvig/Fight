@@ -202,8 +202,10 @@ const JevAI = (()=>{
   // proxied requests, so no browser key is needed.
   let serverKey = false;
   let serverBackend = "";  // "ollama:<model>" or "typesafe", from /jevstatus
+  let serverVersion = "";  // Ollama software version, e.g. "0.35.0"
+  let serverMode = "";     // "native" or "chat" decision mode
   if (location.protocol.startsWith("http")) {
-    fetch("/jevstatus").then(r=>r.json()).then(d=>{ serverKey = !!d.serverKey; serverBackend = d.backend || ""; }).catch(()=>{});
+    fetch("/jevstatus").then(r=>r.json()).then(d=>{ serverKey = !!d.serverKey; serverBackend = d.backend || ""; serverVersion = d.version || ""; serverMode = d.mode || ""; }).catch(()=>{});
   }
 
   // Ring-buffer log of every Jev poll. Shared across all instances.
@@ -433,6 +435,7 @@ const JevAI = (()=>{
     p1: p1inst,          // second instance for autoplay mode
     isEnabled(){ return enabled || serverKey; },
     getBackend(){ return serverBackend; },
+    getInfo(){ return { version: serverVersion, mode: serverMode }; },
     getLog(){ return log.slice(); },
     clearLog(){ log.length = 0; },
     setKey(key){
@@ -1073,7 +1076,8 @@ function drawHUD(p1,p2,stage){
     const s = JevAI.getStatus();
     const col = s.status==="active" ? "#4f4" : "#f66";
     ctx.textAlign="right"; ctx.font="11px monospace"; ctx.fillStyle=col;
-    const b = JevAI.getBackend(); const label = b.indexOf("ollama:")===0 ? "OLLAMA "+b.slice(7) : (b==="typesafe" ? "TYPESAFE" : "JEV");
+    const b = JevAI.getBackend(); let label = b.indexOf("ollama:")===0 ? "OLLAMA "+b.slice(7) : (b==="typesafe" ? "TYPESAFE" : "JEV");
+    const info = JevAI.getInfo(); if (info.version) label += " (Ollama v" + info.version + (info.mode ? ", " + info.mode : "") + ")";
     ctx.fillText(label + ": " + s.status + (s.detail?" "+s.detail:""), W-30, H-12);
   } else {
     ctx.textAlign="right"; ctx.font="11px monospace"; ctx.fillStyle="#888";

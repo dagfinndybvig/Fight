@@ -284,7 +284,10 @@ The bottom-right shows the Jev status:
 - **green** — Jev is active and driving the AI.
 - **red** — fallback to local heuristic (no key, network error, low confidence).
 - Status stays green during fetch (no yellow flicker).
-- The label shows which backend is driving: `OLLAMA <model>` for a local Ollama model, `TYPESAFE` for the Jev API proxy (from `/jevstatus`).
+- The label shows which backend is driving: `OLLAMA <model> (Ollama
+  v<version>, <mode>)` for a local Ollama model, `TYPESAFE` for the Jev
+  API proxy (from `/jevstatus`; mode is `native` on Ollama 0.35+ or
+  `chat` on older versions).
 
 ## Architecture
 

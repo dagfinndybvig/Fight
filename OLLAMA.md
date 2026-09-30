@@ -128,10 +128,12 @@ curl http://localhost:3000/jevstatus
 ```
 
 ```
-{"serverKey":true,"backend":"ollama:nimble:latest","mode":"native"}
+{"serverKey":true,"backend":"ollama:nimble:latest","mode":"native","version":"0.35.0"}
 ```
 
-`mode` is `native` on Ollama 0.35+ and `chat` on older versions.
+`mode` is `native` on Ollama 0.35+ and `chat` on older versions;
+`version` is the Ollama software version. The in-game HUD shows the
+same information: `OLLAMA <model> (Ollama v<version>, <mode>)`.
 
 A full decision poll:
 
