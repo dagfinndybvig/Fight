@@ -237,3 +237,7 @@ is the combination of these two economical solutions — a typed
 decision model for real-time control and a decent coding agent on a
 reasonable subscription — that together gives unprecedented power for pocket
 money.
+
+## License
+
+Public domain — see [LICENSE](LICENSE). Do what you want with it.

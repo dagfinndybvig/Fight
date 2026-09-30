@@ -163,6 +163,19 @@ to enable Jev without a browser key. On a hosted site (e.g. GitHub
 Pages) there is no proxy: pressing **J** warns that Jev needs local
 play, and the HUD shows "Jev needs local server".
 
+#### Local Ollama backend
+
+With `OLLAMA_MODEL` set, `server.js` answers `POST /jev` from a local
+[Ollama](https://ollama.com) model instead of proxying to the TypeSafe
+API. The Jev request (state text plus the choice question) is converted
+to a chat prompt with a JSON-schema-constrained reply (`think:false`,
+64-token cap), and the answer is reshaped into the Jev response shape.
+Because an LLM has no real probability distribution, the server
+synthesizes a peaked one (0.5 on the chosen move, the rest spread
+evenly); the game's temperature sampling then varies play as with Jev.
+No changes to `game.js` — the game cannot tell the backends apart.
+See [OLLAMA.md](OLLAMA.md) for setup, verification, and troubleshooting.
+
 #### Architecture: instance factory
 
 `JevAI` is an IIFE that exposes a factory (`create(id, styles)`). Each

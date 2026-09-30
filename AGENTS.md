@@ -37,7 +37,8 @@ OLLAMA.md    — local Ollama AI setup guide
     `window.jevLog()` in DevTools returns the last 200 decisions.
 - `update()` and `draw()` are wrapped in try/catch so the
   requestAnimationFrame loop survives runtime errors — a broken change
-  may fail silently. Watch the DevTools console.
+  logs `console.error` but the game keeps running. Check the DevTools
+  console during testing.
 
 ## Environment gotchas
 
@@ -98,7 +99,10 @@ buildState() → text → POST /jev → {choice, confidence, probabilities}
 
 - `OLLAMA_MODEL` (e.g. `nimble:latest`) selects the model;
   `OLLAMA_HOST` (default `http://localhost:11434`) selects the instance
-  (hostname and port are honored).
+  (protocol, hostname, and port are honored — `https://` works).
+- The server binds `127.0.0.1` by default so the game and any injected
+  API key are not exposed to the LAN; set `HOST=0.0.0.0` to serve the
+  network.
 - The reply is JSON-schema-constrained (`format`, `think:false`,
   `num_predict:64`) and reshaped into
   `{answers:{action:{choice, confidence, probabilities}}}`.

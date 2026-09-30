@@ -24,6 +24,9 @@ const ENV_KEY = process.env.TYPESAFE_API_KEY || "";
 const OLLAMA_MODEL = process.env.OLLAMA_MODEL || "";
 const OLLAMA_HOST = process.env.OLLAMA_HOST || "http://localhost:11434";
 const OLLAMA_URL = new URL(OLLAMA_HOST);
+// Bind to loopback by default so the game and any injected API key are
+// not exposed to the LAN. Set HOST=0.0.0.0 to serve the network.
+const HOST = process.env.HOST || "127.0.0.1";
 
 const MIME = {
   ".html": "text/html",
@@ -81,6 +84,26 @@ function proxyJev(req, res) {
     });
     upstream.end(body);
   });
+}
+
+// POST a JSON body to the Ollama chat API, honoring the OLLAMA_HOST
+// protocol (http or https) and its implied default port.
+function ollamaPost(body, onReply) {
+  const isTLS = OLLAMA_URL.protocol === "https:";
+  const lib = isTLS ? https : http;
+  const req = lib.request(
+    {
+      host: OLLAMA_URL.hostname,
+      port: OLLAMA_URL.port || (isTLS ? 443 : 11434),
+      path: "/api/chat",
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(body) },
+    },
+    onReply
+  );
+  req.on("error", () => {});
+  req.end(body);
+  return req;
 }
 
 // Answer a /jev request from a local Ollama model. The game sends a Jev
@@ -146,15 +169,7 @@ function ollamaJev(req, res) {
       options: { num_predict: 64, temperature: 0.8 },
     };
     const body = JSON.stringify(payload);
-    const upstream = http.request(
-      {
-        host: OLLAMA_URL.hostname,
-        port: OLLAMA_URL.port || 11434,
-        path: "/api/chat",
-        method: "POST",
-        headers: { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(body) },
-      },
-      (up) => {
+    const upstream = ollamaPost(body, (up) => {
         const parts = [];
         up.on("data", (d) => parts.push(d));
         up.on("end", () => {
@@ -202,7 +217,6 @@ function ollamaJev(req, res) {
       res.writeHead(502, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ error: "ollama_error", detail: String(e.message) }));
     });
-    upstream.end(body);
   });
 }
 
@@ -216,18 +230,7 @@ function warmOllama() {
     messages: [{ role: "user", content: "OK" }],
     options: { num_predict: 1 },
   });
-  const req = http.request(
-    {
-      host: OLLAMA_URL.hostname,
-      port: OLLAMA_URL.port || 11434,
-      path: "/api/chat",
-      method: "POST",
-      headers: { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(body) },
-    },
-    (up) => { up.resume(); }
-  );
-  req.on("error", () => {});
-  req.end(body);
+  ollamaPost(body, (up) => { up.resume(); });
 }
 
 const server = http.createServer((req, res) => {
@@ -243,9 +246,9 @@ const server = http.createServer((req, res) => {
   return serveStatic(req, res);
 });
 
-server.listen(PORT, () => {
+server.listen(PORT, HOST, () => {
   console.log("The Way of the Exploding Fight");
-  console.log("Open http://localhost:" + PORT);
+  console.log("Open http://" + HOST + ":" + PORT);
   if (OLLAMA_MODEL) {
     console.log("AI backend: Ollama model " + OLLAMA_MODEL + " at " + OLLAMA_HOST);
     warmOllama();

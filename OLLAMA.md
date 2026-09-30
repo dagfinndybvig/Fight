@@ -79,7 +79,8 @@ difference between Jev and the local backend.
 | Variable | Default | Purpose |
 | --- | --- | --- |
 | `OLLAMA_MODEL` | *(unset)* | Model name to serve `/jev` from. When set, the Ollama backend takes precedence over the TypeSafe proxy. |
-| `OLLAMA_HOST` | `http://localhost:11434` | Ollama instance to call (hostname and port). Point it at another machine to use a remote Ollama. |
+| `OLLAMA_HOST` | `http://localhost:11434` | Ollama instance to call (protocol, hostname, and port). Point it at another machine to use a remote Ollama — `https://` is supported. |
+| `HOST` | `127.0.0.1` | Network address the game server binds to. Set `0.0.0.0` to play from other devices on your LAN. |
 
 `TYPESAFE_API_KEY` still works as before; if both are set, the Ollama
 backend wins. A browser-supplied key (press **J**) is only used by the
