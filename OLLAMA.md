@@ -10,6 +10,12 @@ With Ollama 0.35+ this uses Ollama's native Jev-style decision endpoint
 probability distribution over all legal moves, and a confidence score —
 the same interface as Jev, served from your own machine.
 
+On quality, nimble is close to the real thing: in Bespoke Labs' public
+benchmarks (13 datasets, 3,880 human-labeled decisions), nimble 9B
+scores 75.7% against Jev 1.13's 76.0% — within the margin where a
+game opponent is indistinguishable. (Figures from Ollama's announcement
+of decision model support, September 2026.)
+
 ## Prerequisites
 
 1. [Node.js](https://nodejs.org) installed (the server uses built-ins

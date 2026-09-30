@@ -110,7 +110,8 @@ pressing **J** warns that it needs local play, and the HUD shows
 
 ### Autoplay mode
 
-Press **0** to toggle autoplay. When on, Jev controls both fighters —
+Press **0** to toggle autoplay. When on, the active AI backend (Jev or your
+local Ollama model) controls both fighters —
 each with its own independent polling instance, fighting style, and
 local heuristic fallback. The bull bonus round is skipped in autoplay.
 
@@ -194,7 +195,7 @@ and the distribution Jev returned. In the browser console,
 - [x] Bull bonus round after stage 2
 - [x] Jev integration with local-AI fallback
 - [x] CORS proxy server for local Jev play (verified)
-- [x] Autoplay mode: Jev controls both fighters
+- [x] Autoplay mode: the active AI backend controls both fighters
 - [x] Fighting styles with random switching and temperature sampling
 - [x] `TYPESAFE_API_KEY` env var support (dev, programmatic use, testing)
 - [x] Hosted-site warning: Jev requires local play

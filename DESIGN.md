@@ -262,7 +262,8 @@ between the `tick()` call and the fighter update.
 #### Autoplay mode
 
 Press **0** to toggle autoplay. When on, `JevAI.p1` drives the player
-fighter (p1) with the same architecture as p2 — independent polling,
+fighter (p1) with the same architecture as p2 — both poll whichever
+backend is active (Jev or the local Ollama model). Independent polling,
 style switching, temperature sampling, and local heuristic fallback. The
 bonus round is skipped in autoplay (goes straight to stage clear). The
 HUD shows a yellow `AUTOPLAY (0 to toggle)` indicator in the bottom-left,
