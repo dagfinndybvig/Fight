@@ -227,7 +227,23 @@ and the distribution Jev returned. In the browser console,
 - [x] Sensei "Fight!" speech bubble at the start of each stage
 - [x] Local Ollama AI backend: zero-config auto-detection, native Jev-style
       decisions via `/v1/systemone` (Ollama 0.35+), chat-adapter fallback
-- [x] HUD names the active AI backend (OLLAMA / TYPESAFE)
+- [x] HUD names the active AI backend (OLLAMA / TYPESAFE), including the
+      Ollama version and decision mode
+- [x] Per-poll latency logging: `duration` in the decision log, shown in
+      the **L** panel
+- [x] Decision-model test harness framing: model swapping, per-decision
+      telemetry, self-play, strict visible fallback
+- [x] Measured latency documented (~100-130ms warm, native mode)
+- [x] Audit hardening: loopback binding, path-traversal checks, `https://`
+      `OLLAMA_HOST`, Unlicense
+
+Open items:
+
+- [ ] Compare decision models in the harness: nimble vs `tev1` vs
+      `tev1:0.8b` on the same stages
+- [ ] Exercise the chat-adapter fallback against a real pre-0.35 Ollama
+      (code-reviewed only)
+- [ ] Normalize mixed CRLF/LF line endings across the repo docs
 
 ## Design
 
