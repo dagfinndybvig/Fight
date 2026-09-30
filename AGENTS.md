@@ -65,6 +65,18 @@ buildState() → text → POST /jev → {choice, confidence, probabilities}
   (default) or answers it from a local Ollama model when `OLLAMA_MODEL`
   is set. The game cannot tell the difference — do not couple `game.js`
   to the backend choice.
+- **Native decision mode (Ollama 0.35+)**: the `/jev` request is
+  forwarded to Ollama's `/v1/systemone` endpoint, which implements the
+  Jev API natively — the response has real probability distributions
+  and confidence. Probed at startup; the log reports
+  `Decision mode: native ...`. `/jevstatus` includes `mode: native|chat`.
+- **Chat adapter mode (Ollama < 0.35, automatic fallback)**: the request
+  is adapted to a JSON-schema-constrained chat completion and reshaped
+  into the Jev response shape with synthesized probabilities (0.5 on
+  the chosen move, rest spread evenly).
+- **The native endpoint requires `criteria` as an object**
+  (`{option: description or null}`) — arrays get a 400. The game sends
+  the object form; keep it that way.
 - `JevAI` is a factory (`create(id, styles)`); two instances exist:
   `JevAI` (p2, AI opponent) and `JevAI.p1` (player, autoplay only), each
   with independent polling state. They share the API key and a 200-entry
@@ -73,8 +85,10 @@ buildState() → text → POST /jev → {choice, confidence, probabilities}
 ### Gotchas in the AI path
 
 - **`criteria` is an object, not an array** — the game sends
-  `{moveName: "description"}`. `server.js` accepts both shapes; keep it
-  that way. This caused a real bug once (HTTP 400 → permanent fallback).
+  `{moveName: "description"}` and the native endpoint requires that
+  shape. `server.js` accepts both shapes in chat mode; keep it that
+  way. An array criteria caused a real bug once (HTTP 400 → permanent
+  fallback).
 - **The game ignores response bodies** — on `!resp.ok` it throws
   `HTTP <status>`, so the log panel shows `HTTP 502`, never the server's
   `ollama_error` detail. Check the server console for the real error.
@@ -86,9 +100,9 @@ buildState() → text → POST /jev → {choice, confidence, probabilities}
   recovers automatically; `server.js` warms the model at startup.
 - **Sampling rules**: the previous choice is filtered out before
   sampling (never two identical consecutive moves); if probabilities are
-  null, the game falls back to argmax. The Ollama backend synthesizes a
-  peaked distribution (0.5 on the chosen move, rest spread evenly)
-  because an LLM has no real distribution.
+  null, the game falls back to argmax. In native mode the distribution
+  is the model's real one; only chat mode synthesizes it (0.5 on the
+  chosen move, rest spread evenly).
 - **A browser key (press J) only affects the TypeSafe proxy path**; it
   is ignored by the Ollama backend. `TYPESAFE_API_KEY` env var injects
   the key server-side; `OLLAMA_MODEL` set wins over the TypeSafe proxy.

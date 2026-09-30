@@ -167,12 +167,19 @@ play, and the HUD shows "Jev needs local server".
 
 With `OLLAMA_MODEL` set, `server.js` answers `POST /jev` from a local
 [Ollama](https://ollama.com) model instead of proxying to the TypeSafe
-API. The Jev request (state text plus the choice question) is converted
-to a chat prompt with a JSON-schema-constrained reply (`think:false`,
-64-token cap), and the answer is reshaped into the Jev response shape.
-Because an LLM has no real probability distribution, the server
-synthesizes a peaked one (0.5 on the chosen move, the rest spread
-evenly); the game's temperature sampling then varies play as with Jev.
+API, in one of two modes chosen at startup:
+
+- **Native decision mode (Ollama 0.35+)** — the Jev request is forwarded
+  to Ollama's `/v1/systemone` endpoint, which implements TypeSafe's Jev
+  API natively. The model answers with a real probability distribution
+  over the 15 moves and a confidence score, so the game's temperature
+  sampling works on genuine probabilities.
+- **Chat adapter mode (older Ollama)** — the request is converted to a
+  chat prompt with a JSON-schema-constrained reply (`think:false`,
+  64-token cap), and the answer is reshaped into the Jev response
+  shape with a synthesized peaked distribution (0.5 on the chosen
+  move, the rest spread evenly).
+
 No changes to `game.js` — the game cannot tell the backends apart.
 See [OLLAMA.md](OLLAMA.md) for setup, verification, and troubleshooting.
 

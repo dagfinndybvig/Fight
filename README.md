@@ -57,9 +57,13 @@ OLLAMA_MODEL=nimble:latest node server.js
 
 The model is asked for a JSON move choice (constrained to the 15 legal
 moves) and the reply is reshaped into the Jev response format, so the
-game needs no changes. The server pre-warms the model at startup so the
-first poll is not a cold load. `OLLAMA_HOST` (default
-`http://localhost:11434`) points at a different Ollama instance.
+game needs no changes. With Ollama 0.35+ the server instead uses
+Ollama's native Jev-style decision endpoint (`/v1/systemone`), which
+answers with a real probability distribution and confidence — the
+same typed decisions as Jev, locally. The server pre-warms the model
+at startup so the first poll is not a cold load. `OLLAMA_HOST`
+(default `http://localhost:11434`) points at a different Ollama
+instance.
 
 **With Jev AI (verified working):** the TypeSafe API does not send CORS
 headers, so browser-to-API calls are blocked. A zero-dependency Node.js

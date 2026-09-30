@@ -4,9 +4,11 @@
 // Usage:  node server.js   then open http://localhost:3000
 //
 // Local AI backend: set OLLAMA_MODEL (e.g. nimble:latest) to answer /jev
-// from a local Ollama model instead of the TypeSafe API. The model is
-// asked for a JSON move choice and the reply is reshaped into the Jev
-// response format, so the game needs no changes.
+// from a local Ollama model instead of the TypeSafe API. With Ollama
+// 0.35+, the request is proxied to Ollama's native Jev-compatible
+// /v1/systemone endpoint (real probability distributions and confidence).
+// Older Ollama versions fall back to a chat adapter that asks the model
+// for a JSON move choice and reshapes the reply into the Jev format.
 const http = require("http");
 const https = require("https");
 const fs = require("fs");
@@ -23,6 +25,10 @@ const ENV_KEY = process.env.TYPESAFE_API_KEY || "";
 // model. When unset and no API key is configured, the server
 // auto-detects the first installed model at startup.
 let OLLAMA_MODEL = process.env.OLLAMA_MODEL || "";
+// Whether Ollama's native /v1/systemone decision endpoint is available
+// (Ollama 0.35+). Probed at startup; null means not probed yet — the
+// first /jev request tries native and falls back on 404.
+let nativeDecisions = null;
 const OLLAMA_HOST = process.env.OLLAMA_HOST || "http://localhost:11434";
 const OLLAMA_URL = new URL(OLLAMA_HOST);
 // Bind to loopback by default so the game and any injected API key are
@@ -87,16 +93,16 @@ function proxyJev(req, res) {
   });
 }
 
-// POST a JSON body to the Ollama chat API, honoring the OLLAMA_HOST
-// protocol (http or https) and its implied default port.
-function ollamaPost(body, onReply) {
+// POST a JSON body to a path on the Ollama API, honoring the
+// OLLAMA_HOST protocol (http or https) and its implied default port.
+function ollamaPost(path, body, onReply) {
   const isTLS = OLLAMA_URL.protocol === "https:";
   const lib = isTLS ? https : http;
   const req = lib.request(
     {
       host: OLLAMA_URL.hostname,
       port: OLLAMA_URL.port || (isTLS ? 443 : 11434),
-      path: "/api/chat",
+      path: path,
       method: "POST",
       headers: { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(body) },
     },
@@ -150,12 +156,11 @@ function autoDetectOllama() {
   });
 }
 
-// Answer a /jev request from a local Ollama model. The game sends a Jev
-// System One request: { model, state, questions: { action: { type:
-// "choice", instructions, criteria } } }. We turn that into a chat
-// prompt with a JSON-schema-constrained answer and reshape the reply
-// into the Jev response shape the game expects.
-function ollamaJev(req, res) {
+// Handle POST /jev via Ollama. Reads the body once, then dispatches:
+// proxy the Jev request to Ollama's native /v1/systemone endpoint
+// (Ollama 0.35+), or adapt it through a chat completion on older
+// versions. The first request probes which mode works.
+function handleJevOllama(req, res) {
   const chunks = [];
   req.on("data", (c) => chunks.push(c));
   req.on("end", () => {
@@ -167,6 +172,35 @@ function ollamaJev(req, res) {
       res.end(JSON.stringify({ error: "bad_request", detail: "invalid JSON" }));
       return;
     }
+    if (nativeDecisions === false) return chatAdapted(jevReq, res);
+    // Native path: the game's request is already the Jev System One
+    // shape — just point it at Ollama with the configured model.
+    jevReq.model = OLLAMA_MODEL;
+    const body = JSON.stringify(jevReq);
+    const upstream = ollamaPost("/v1/systemone", body, (up) => {
+      if (up.statusCode === 404) {
+        // Ollama < 0.35 has no decision endpoint.
+        nativeDecisions = false;
+        up.resume();
+        return chatAdapted(jevReq, res);
+      }
+      res.writeHead(up.statusCode || 502, {
+        "Content-Type": up.headers["content-type"] || "application/json",
+      });
+      up.pipe(res);
+    });
+    upstream.on("error", (e) => {
+      res.writeHead(502, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "ollama_error", detail: String(e.message) }));
+    });
+  });
+}
+
+// Fallback for Ollama < 0.35: turn the Jev request into a chat prompt
+// with a JSON-schema-constrained answer and reshape the reply into the
+// Jev response shape the game expects. Probabilities are synthesized
+// (peaked on the chosen move) because a chat model has no distribution.
+function chatAdapted(jevReq, res) {
     const q = jevReq.questions && jevReq.questions.action;
     // criteria is an object {move: description} from the game, or an
     // array of move names from hand-rolled requests.
@@ -213,7 +247,7 @@ function ollamaJev(req, res) {
       options: { num_predict: 64, temperature: 0.8 },
     };
     const body = JSON.stringify(payload);
-    const upstream = ollamaPost(body, (up) => {
+    const upstream = ollamaPost("/api/chat", body, (up) => {
         const parts = [];
         up.on("data", (d) => parts.push(d));
         up.on("end", () => {
@@ -261,30 +295,53 @@ function ollamaJev(req, res) {
       res.writeHead(502, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ error: "ollama_error", detail: String(e.message) }));
     });
-  });
 }
 
-// Fire one tiny generation at startup so the model is loaded into memory
-// before the first game poll (a cold load can take tens of seconds).
+// At startup, fire one tiny decision request at Ollama's native
+// /v1/systemone endpoint. This loads the model into memory before the
+// first game poll (a cold load can take tens of seconds) and records
+// whether the native decision endpoint is available. On Ollama < 0.35
+// it 404s and the chat adapter takes over; warm that path instead.
 function warmOllama() {
-  const body = JSON.stringify({
+  const probeBody = JSON.stringify({
     model: OLLAMA_MODEL,
-    stream: false,
-    think: false,
-    messages: [{ role: "user", content: "OK" }],
-    options: { num_predict: 1 },
+    state: "warm-up",
+    questions: { q: { type: "choice", instructions: "Pick one.", criteria: { a: null, b: null } } },
   });
-  ollamaPost(body, (up) => { up.resume(); });
+  ollamaPost("/v1/systemone", probeBody, (up) => {
+    if (up.statusCode === 200) {
+      nativeDecisions = true;
+      console.log("Decision mode: native /v1/systemone (Ollama 0.35+)");
+    } else {
+      nativeDecisions = false;
+      console.log("Decision mode: chat adapter (no native /v1/systemone)");
+    }
+    up.resume();
+    if (nativeDecisions === false) {
+      const body = JSON.stringify({
+        model: OLLAMA_MODEL,
+        stream: false,
+        think: false,
+        messages: [{ role: "user", content: "OK" }],
+        options: { num_predict: 1 },
+      });
+      ollamaPost("/api/chat", body, (up2) => { up2.resume(); });
+    }
+  });
 }
 
 const server = http.createServer((req, res) => {
   if (req.method === "POST" && req.url === "/jev") {
-    if (OLLAMA_MODEL) return ollamaJev(req, res);
+    if (OLLAMA_MODEL) return handleJevOllama(req, res);
     return proxyJev(req, res);
   }
   if (req.method === "GET" && req.url === "/jevstatus") {
     res.writeHead(200, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ serverKey: !!ENV_KEY || !!OLLAMA_MODEL, backend: OLLAMA_MODEL ? "ollama:" + OLLAMA_MODEL : "typesafe" }));
+    res.end(JSON.stringify({
+      serverKey: !!ENV_KEY || !!OLLAMA_MODEL,
+      backend: OLLAMA_MODEL ? "ollama:" + OLLAMA_MODEL : "typesafe",
+      mode: OLLAMA_MODEL ? (nativeDecisions === false ? "chat" : "native") : "typesafe",
+    }));
     return;
   }
   return serveStatic(req, res);
