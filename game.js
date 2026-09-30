@@ -1066,7 +1066,7 @@ function drawHUD(p1,p2,stage){
   ctx.fillText("STAGE "+stage+" — "+bgTheme(stage).name, W/2, 33);
   // yin-yangs
   ctx.textAlign="left"; ctx.fillStyle=p1.isAI?"#d04a4a":"#3a78d0";
-  ctx.font="bold 13px monospace"; ctx.fillText("YOU", 30, 30);
+  ctx.font="bold 13px monospace"; ctx.fillText(autoplay ? "YOU (AI)" : "YOU", 30, 30);
   drawYinYang(70,52,12, clamp(p1.score,0,1)); drawYinYang(100,52,12, clamp(p1.score-1,0,1));
   ctx.textAlign="right"; ctx.fillStyle="#d04a4a";
   ctx.fillText("OPPONENT", W-30, 30);

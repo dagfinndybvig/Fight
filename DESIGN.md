@@ -265,7 +265,8 @@ Press **0** to toggle autoplay. When on, `JevAI.p1` drives the player
 fighter (p1) with the same architecture as p2 — independent polling,
 style switching, temperature sampling, and local heuristic fallback. The
 bonus round is skipped in autoplay (goes straight to stage clear). The
-HUD shows a yellow `AUTOPLAY (0 to toggle)` indicator in the bottom-left.
+HUD shows a yellow `AUTOPLAY (0 to toggle)` indicator in the bottom-left,
+and the top-left score label reads `YOU (AI)` while autoplay is on.
 
 ### Logging
 
