@@ -272,10 +272,11 @@ and the top-left score label reads `YOU (AI)` while autoplay is on.
 ### Logging
 
 Every Jev poll is logged to a 200-entry ring buffer:
-`{ t, id, stage, ok, choice, jevChoice, confidence, state, probabilities, reason }`.
+`{ t, id, stage, ok, choice, jevChoice, confidence, state, probabilities, duration, reason }`
+(`duration` is the poll latency in ms; absent on errors).
 
 - Press **L** to toggle an on-canvas panel showing recent decisions with
-  timestamps, fighter ID, choice, confidence, stage, and the
+  timestamps, fighter ID, choice, confidence, poll latency, stage, and the
   second-highest probability option.
 - In DevTools: `window.jevLog()` returns the full log array,
   `window.jevClear()` empties it.

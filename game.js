@@ -315,6 +315,7 @@ const JevAI = (()=>{
       };
       const ctrl = new AbortController();
       const timeout = setTimeout(()=>ctrl.abort(), 3000);
+      const t0 = performance.now();  // poll latency, logged per decision
       let resp;
       try {
         resp = await fetch(ENDPOINT, {
@@ -335,7 +336,7 @@ const JevAI = (()=>{
       const data = await resp.json();
       const ans = data.answers && data.answers.action;
       if(!ans || !ans.choice) throw new Error("no choice in response");
-      return { choice: ans.choice, confidence: ans.confidence || 0, state: stateStr, probabilities: ans.probabilities || null };
+      return { choice: ans.choice, confidence: ans.confidence || 0, state: stateStr, probabilities: ans.probabilities || null, duration: Math.round(performance.now() - t0) };
     }
 
     function tick(ai, opp, stage, dt, fallbackFn){
@@ -370,7 +371,7 @@ const JevAI = (()=>{
           statusDetail = "low conf " + res.confidence.toFixed(2);
           lastChoice = null;
           useFallback = true;
-          addLog({ t: Date.now(), id, stage, ok: false, reason: "low_conf", choice: res.choice, confidence: res.confidence, state: res.state, probabilities: res.probabilities });
+          addLog({ t: Date.now(), id, stage, ok: false, reason: "low_conf", choice: res.choice, confidence: res.confidence, state: res.state, probabilities: res.probabilities, duration: res.duration });
         } else {
           // Sample from Jev's probability distribution with a temperature
           // for natural variety. Temperature >1 flattens the distribution,
@@ -395,7 +396,7 @@ const JevAI = (()=>{
           statusDetail = picked + " (" + res.confidence.toFixed(2) + ")";
           lastChoice = picked;
           useFallback = false;
-          addLog({ t: Date.now(), id, stage, ok: true, choice: picked, jevChoice: res.choice, confidence: res.confidence, state: res.state, probabilities: res.probabilities });
+          addLog({ t: Date.now(), id, stage, ok: true, choice: picked, jevChoice: res.choice, confidence: res.confidence, state: res.state, probabilities: res.probabilities, duration: res.duration });
         }
       }).catch(err=>{
         inflight = false;
@@ -1530,9 +1531,10 @@ function drawJevLogPanel(){
       ctx.fillStyle = col;
       ctx.fillText((e.id||"?") + " " + e.choice, x + 60, ly);
       ctx.fillStyle = "#999";
-      ctx.fillText(e.confidence.toFixed(2), x + 180, ly);
+      ctx.fillText(e.confidence.toFixed(2), x + 150, ly);
+      ctx.fillStyle = "#7aa"; if(e.duration!=null) ctx.fillText(e.duration + "ms", x + 185, ly);
       ctx.fillStyle = "#555";
-      ctx.fillText("S" + e.stage, x + 220, ly);
+      ctx.fillText("S" + e.stage, x + 225, ly);
       // top alternative from probabilities
       if(e.probabilities){
         const sorted = Object.entries(e.probabilities).sort((a,b)=>b[1]-a[1]);
@@ -1545,7 +1547,7 @@ function drawJevLogPanel(){
       const reason = e.reason || (e.choice ? "low_conf " + e.confidence.toFixed(2) : "error");
       ctx.fillText(reason, x + 92, ly);
       ctx.fillStyle = "#555";
-      ctx.fillText("S" + e.stage, x + 220, ly);
+      ctx.fillText("S" + e.stage, x + 225, ly);
     }
   }
 

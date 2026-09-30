@@ -124,7 +124,7 @@ both autoplay and manual play.
 ### Jev log
 
 Press **L** during a fight to toggle an on-canvas log panel showing every
-Jev decision: which fighter, choice, confidence, stage, and probability
+Jev decision: which fighter, choice, confidence, poll latency, stage, and probability
 distribution. In the DevTools console, `window.jevLog()` returns the
 full 200-entry ring buffer and `window.jevClear()` empties it.
 
