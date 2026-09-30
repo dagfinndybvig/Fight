@@ -9,7 +9,7 @@ Win all four stages to become the master.
 It can be played with TypeSafe Jev if you have an API key, with a Jev-like local model via [Ollama](https://ollama.com) (no API key needed — see [OLLAMA.md](OLLAMA.md)), or online without any advanced AI just to get an impression:
 https://dagfinndybvig.github.io/Fight/
 
-Interestingly Jev offers a more varied gameplay than the traditional autoplay, so the payoff is clearly visible. The game also doubles as a small test harness for Jev-style decision models — see [A test harness for decision models](#a-test-harness-for-decision-models).
+Interestingly Jev offers a more varied gameplay than the deterministic autoplay, so the payoff is clearly visible. The game also doubles as a small test harness for Jev-style decision models — see [A test harness for decision models](#a-test-harness-for-decision-models).
 
 ### Controls
 
