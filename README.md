@@ -137,6 +137,16 @@ enter a [Jev](https://www.typesafe.ai) API key (TypeSafe System One model).
 Both fall back to the local heuristic when no backend is configured, on network
 error, or low confidence. See [DESIGN.md](DESIGN.md) for details.
 
+Which backend is playing, and how to get it:
+
+| Backend | HUD shows | How to enable |
+| --- | --- | --- |
+| Ollama decision model (local) | `OLLAMA <model>` | Install [Ollama](https://ollama.com), pull a model, run `node server.js` — auto-detected; set `OLLAMA_MODEL` to pick one |
+| TypeSafe Jev (cloud) | `TYPESAFE` | Set `TYPESAFE_API_KEY` before starting the server, or press **J** in-game |
+| Built-in heuristic | (AI: local heuristic) | Nothing needed — this is also the automatic fallback |
+
+Precedence: `OLLAMA_MODEL` > `TYPESAFE_API_KEY` > auto-detected Ollama model. With Ollama 0.35+, decisions come from Ollama's native Jev-style `/v1/systemone` endpoint (real probability distributions); older versions use a chat adapter. The HUD label names the active backend so you always know who is playing.
+
 ## How it works
 
 Every 300ms, for each Jev-driven fighter:
@@ -189,6 +199,9 @@ and the distribution Jev returned. In the browser console,
 - [x] `TYPESAFE_API_KEY` env var support (dev, programmatic use, testing)
 - [x] Hosted-site warning: Jev requires local play
 - [x] Sensei "Fight!" speech bubble at the start of each stage
+- [x] Local Ollama AI backend: zero-config auto-detection, native Jev-style
+      decisions via `/v1/systemone` (Ollama 0.35+), chat-adapter fallback
+- [x] HUD names the active AI backend (OLLAMA / TYPESAFE)
 
 ## Design
 
