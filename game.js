@@ -1169,7 +1169,7 @@ function aiControl(f, opp, stage, dt){
 function guardRepeatedHighKick(f, opp, stage, control){
   const move = opp.move;
   if(f.guardMove && f.guardMove!==move) f.guardMove=null;
-  if(f.guardMove===move){
+  if(f.guardMove && f.guardMove===move){
     if((move.phase==="startup" || move.phase==="active") && !f.busy && f.stun<=0 && f.y>=GROUND_Y-1){
       return { left:false,right:false,up:false,down:true,punch:false,kick:false,away:true };
     }
