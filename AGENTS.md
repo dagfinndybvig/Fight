@@ -165,6 +165,9 @@ buildState() → text → POST /jev → {choice, confidence, probabilities}
   (key **0**) skips the bonus round and drives both fighters.
 - **Stages** scale AI difficulty (reaction time 0.52s→0.16s, block
   chance 0.18→0.60, aggression 0.30→0.95 in the heuristic).
+- **Anti-spam guard**: repeated straight high kicks get one stage-scaled
+  startup block check (0.45→0.80) when the AI is free, grounded, and in
+  range. The first kick and mixed attack strings are unaffected.
 - **Fighting styles**: each fighter has two style strings, switched
   every 3-7s; on switch `lastChoice` is cleared to force re-evaluation.
 

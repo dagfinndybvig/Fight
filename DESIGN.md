@@ -134,6 +134,16 @@ steam puffs, swishing tail.
 This serves as the fallback for both fighters when Jev is unavailable
 (no key, network error, low confidence).
 
+### Repeated-kick guard
+
+The straight high kick's 0.10s startup is shorter than the 300ms model
+poll interval. A shared low-level guard therefore tracks repeated attacks
+within each bout. From the second consecutive straight high kick, a free,
+grounded AI in range gets one startup block check; its chance scales from
+0.45 at stage 1 to 0.80 at stage 4. This applies equally to TypeSafe,
+Ollama, and heuristic control. The first kick and mixed attack strings
+remain under normal decision control.
+
 ### Jev AI (TypeSafe System One) — verified working
 
 When a TypeSafe API key is set (press **J** in-game), the machine player is

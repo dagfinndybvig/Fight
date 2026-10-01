@@ -74,6 +74,11 @@ detailed results.
 
 11 moves total — punch/kick variants, elbow, sweep, roundhouse, back kick,
 jump attacks. See [DESIGN.md](DESIGN.md) for the full move list and mechanics.
+The computer tracks one simple anti-spam tell within a bout: repeat the
+straight high kick and a free, grounded opponent may recognize and block
+it during startup, with better odds on later stages. This low-level
+reflex applies to every AI backend because the kick starts faster than
+the 300ms model poll; mixed attacks remain under normal decision control.
 To drive the AI with a local Ollama model instead of the Jev API, see
 [OLLAMA.md](OLLAMA.md).
 

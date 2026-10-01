@@ -517,6 +517,9 @@ function makeFighter(x, facing, isAI){
     pose: clonePose(POSES.IDLE),
     flash:0,             // hit flash timer
     stun:0,              // block/hit stun
+    lastAttack:null,
+    repeatedAttack:0,
+    guardMove:null,
     name:"",
   };
 }
@@ -526,6 +529,8 @@ function startMove(f, key){
   if(f.busy || f.stun>0) return;
   if(f.y < GROUND_Y - 1 && !(key==="jumpKick"||key==="jumpPunch")) return; // grounded-only moves need ground
   if(key==="jumpKick"||key==="jumpPunch"){ if(f.y>=GROUND_Y-1) return; }    // air moves need air
+  if(f.lastAttack===key) f.repeatedAttack++;
+  else { f.lastAttack=key; f.repeatedAttack=1; }
   f.move = { key, t:0, phase:"startup" };
   f.state="attack"; f.busy=true;
 }
@@ -1161,6 +1166,26 @@ function aiControl(f, opp, stage, dt){
   a.act=out; return out;
 }
 
+function guardRepeatedHighKick(f, opp, stage, control){
+  const move = opp.move;
+  if(f.guardMove && f.guardMove!==move) f.guardMove=null;
+  if(f.guardMove===move){
+    if((move.phase==="startup" || move.phase==="active") && !f.busy && f.stun<=0 && f.y>=GROUND_Y-1){
+      return { left:false,right:false,up:false,down:true,punch:false,kick:false,away:true };
+    }
+    f.guardMove=null;
+  }
+  if(!move || move.key!=="kickHigh" || move.phase!=="startup" || move.guardChecked ||
+     opp.repeatedAttack<2 || f.busy || f.stun>0 || f.y<GROUND_Y-1) return control;
+  move.guardChecked=true;
+  const fdist = opp.facing*(f.x-opp.x);
+  if(fdist<30 || fdist>MOVES.kickHigh.reach+8) return control;
+  const stageT = (clamp(stage, 1, 4) - 1) / 3;
+  if(Math.random()>=lerp(0.45, 0.80, stageT)) return control;
+  f.guardMove=move;
+  return { left:false,right:false,up:false,down:true,punch:false,kick:false,away:true };
+}
+
 // ============================================================
 // Game state machine
 // ============================================================
@@ -1467,10 +1492,12 @@ function update(dt){
 
   // AI control: Jev if enabled, otherwise local heuristic
   const aiFallback = ()=> aiControl(p2,p1,stage,dt);
-  const ai = JevAI.tick(p2, p1, stage, dt, aiFallback);
+  const ai = guardRepeatedHighKick(p2, p1, stage, JevAI.tick(p2, p1, stage, dt, aiFallback));
   // p1: Jev-controlled when autoplay is on, otherwise human input (null)
   const p1Fallback = ()=> aiControl(p1,p2,stage,dt);
-  const p1ctl = (autoplay && JevAI.p1) ? JevAI.p1.tick(p1, p2, stage, dt, p1Fallback) : null;
+  const p1ctl = (autoplay && JevAI.p1)
+    ? guardRepeatedHighKick(p1, p2, stage, JevAI.p1.tick(p1, p2, stage, dt, p1Fallback))
+    : null;
   updateFighter(p1,p2,dt,p1ctl);
   updateFighter(p2,p1,dt,ai);
 
