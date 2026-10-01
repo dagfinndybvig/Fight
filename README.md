@@ -169,6 +169,18 @@ bench for Jev-style decision models:
   goes red while it does. The local proxy enforces the same 3s deadline
   and cancels backend work when the browser disconnects.
 
+For a repeatable fixed-state comparison, run:
+
+```
+node benchmark.js nimble:latest tev1:latest tev1:0.8b
+```
+
+The benchmark sends the same 16 situations (four per stage) to every
+model three times, after an unmeasured warm-up. It reports warm latency,
+confidence, game fallback rate, errors, and move diversity. See
+[OLLAMA.md](OLLAMA.md#model-comparison) for the measured results and
+protocol.
+
 Measured on the reference machine (nimble 9B, Q8_0, native mode):
 ~100–130ms per decision warm — inside the 300ms loop, so the AI
 re-decides at the game's full cadence. Details in
@@ -240,14 +252,9 @@ and the distribution Jev returned. In the browser console,
       size limits, bounded/cancelled backend polls, `https://` `OLLAMA_HOST`
 - [x] Gameplay audit fixes: functional blocking, exact stage difficulty
       scaling, symmetric autoplay resets, and one-key bout restart
-
-Open items:
-
-- [ ] Compare decision models in the harness: nimble vs `tev1` vs
-      `tev1:0.8b` on the same stages
-- [ ] Exercise the chat-adapter fallback against a real pre-0.35 Ollama
-      (code-reviewed only)
-- [ ] Normalize mixed CRLF/LF line endings across the repo docs
+- [x] Fixed-state model benchmark: nimble vs `tev1` vs `tev1:0.8b`
+- [x] Chat-adapter fallback verified end to end on Ollama 0.34.2
+- [x] CRLF policy enforced for tracked source and documentation
 
 ## Design
 

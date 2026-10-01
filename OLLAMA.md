@@ -112,6 +112,11 @@ cause early fallbacks).
 No changes to `game.js` are needed — the game cannot tell the
 difference between Jev and the local backend.
 
+The adapter has been verified end to end with the official Ollama
+0.34.2 Windows build and `qwen2.5:3b`: startup selected `mode:"chat"`,
+an object-form 15-move request returned a legal choice and confidence,
+and the synthesized probabilities summed to 1.
+
 ## Configuration
 
 | Variable | Default | Purpose |
@@ -178,6 +183,38 @@ Your own numbers are visible in-game: press **L** and read the latency
 column (ms per decision), or export with `window.jevLog()` and average
 the `duration` field. Note the first decision after a cold load spikes
 (everything does) and error entries carry no duration.
+
+## Model comparison
+
+`benchmark.js` exercises the same state/question contract without
+requiring browser automation:
+
+```
+node benchmark.js nimble:latest tev1:latest tev1:0.8b
+```
+
+The suite contains 16 fixed fight situations, four from each stage,
+covering far, kick, punch, and close ranges; attack and defense; wall
+pressure; airborne/crouching states; and multiple score lines. Each
+model receives every situation three times sequentially after one
+unmeasured warm-up (48 measured decisions). The game fallback rule is
+applied to each result: confidence below 0.3, latency above 3s, or an
+error. Override runs, per-request timeout, or host with
+`BENCHMARK_RUNS`, `BENCHMARK_TIMEOUT_MS`, and `OLLAMA_HOST`.
+
+Measured on the reference machine with Ollama 0.35.0:
+
+| Model | Decisions | Mean | p50 | p95 | Max | Mean confidence | Low conf | Slow | Errors | Fallback | Unique moves |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| `nimble:latest` | 48 | 147ms | 140ms | 220ms | 248ms | 0.573 | 0.0% | 0.0% | 0 | 0.0% | 6 |
+| `tev1:latest` | 48 | 145ms | 147ms | 162ms | 165ms | 0.627 | 0.0% | 0.0% | 0 | 0.0% | 5 |
+| `tev1:0.8b` | 48 | 86ms | 86ms | 107ms | 117ms | 0.433 | 18.8% | 0.0% | 0 | 18.8% | 5 |
+
+On this state suite, `nimble` and full-size `tev1` both stayed inside
+the game's fallback thresholds. `tev1:0.8b` was fastest but produced
+low-confidence decisions often enough to hand control to the heuristic
+for nearly one decision in five. This benchmark compares decision
+quality signals and responsiveness, not full-bout win rate.
 
 ## Troubleshooting
 

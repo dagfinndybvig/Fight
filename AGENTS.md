@@ -18,6 +18,7 @@ index.html   — page shell, loads style.css and game.js
 style.css    — full-screen canvas, responsive scaling
 game.js      — the entire game (single file, ~1500 lines, no dependencies)
 server.js    — local Node.js server: static files + AI decision endpoint
+benchmark.js — fixed-state comparison for Ollama decision models
 OLLAMA.md    — local Ollama AI setup guide
 ```
 
@@ -35,6 +36,10 @@ OLLAMA.md    — local Ollama AI setup guide
     poll; the exact request is in OLLAMA.md.
   - Playing a bout in the browser; press **L** for the decision log,
     `window.jevLog()` in DevTools returns the last 200 decisions.
+- Compare decision models with
+  `node benchmark.js nimble:latest tev1:latest tev1:0.8b`. The script
+  uses 16 fixed situations × 3 runs and prints latency, confidence,
+  fallback, error, and diversity metrics.
 - `update()` and `draw()` are wrapped in try/catch so the
   requestAnimationFrame loop survives runtime errors — a broken change
   logs `console.error` but the game keeps running. Check the DevTools
@@ -44,8 +49,9 @@ OLLAMA.md    — local Ollama AI setup guide
 
 - Windows machine. The bash tool runs Git Bash (POSIX paths like
   `/c/Users/...`), not cmd.exe.
-- Repo files use CRLF line endings. The edit tool needs exact matches —
-  single-line `old_string` is safest; multi-line matches can fail.
+- `.gitattributes` enforces CRLF for tracked source and documentation.
+  The edit tool needs exact matches — single-line `old_string` is safest;
+  multi-line matches can fail.
 - When starting the server from a tool, use forward slashes in the
   command (`node C:/Users/.../server.js`); backslashes get eaten.
 
@@ -133,7 +139,8 @@ buildState() → text → POST /jev → {choice, confidence, probabilities}
 - The game doubles as a decision-model test harness: fixed state
   format, fixed 15-option question, per-decision telemetry, self-play
   in autoplay. Keep the state format stable when changing
-  `buildState()` — it is the benchmark contract.
+  `buildState()` — it is the benchmark contract. Keep `benchmark.js`
+  `ACTIONS` and fixed states synchronized with that contract.
 
 ## Game mechanics essentials
 

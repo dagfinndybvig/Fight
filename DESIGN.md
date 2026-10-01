@@ -294,6 +294,14 @@ value:
   timeout, HTTP errors → heuristic AI, red HUD), so a weak model
   degrades instead of breaking the loop.
 
+`benchmark.js` makes model comparisons repeatable with 16 fixed
+situations (four per stage), the same 15-option question, three measured
+runs after warm-up, and the game's exact fallback thresholds. It reports
+latency percentiles, confidence, fallback causes, errors, and move
+diversity. Keep its `ACTIONS` descriptions and state wording synchronized
+with `JevAI.buildState()` when changing the benchmark contract. Current
+nimble/tev1 results are documented in [OLLAMA.md](OLLAMA.md#model-comparison).
+
 Measured reference (nimble 9B, Q8_0, native mode, 300ms poll
 spacing): ~100–130ms per warm decision — below the poll interval, so
 the AI re-decides every tick. First poll after idle ~300ms; unspaced
@@ -329,6 +337,7 @@ index.html   — page shell, loads style.css and game.js
 style.css    — full-screen canvas, responsive scaling
 game.js      — entire game (single file, no dependencies)
 server.js    — local Node.js server + Jev CORS proxy (run: node server.js)
+benchmark.js — fixed-state Ollama model comparison (run: node benchmark.js ...)
 ```
 
 ### Game loop
