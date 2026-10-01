@@ -15,9 +15,12 @@ decision models rather than only a game.
 
 ## Decision-model test harness
 
-Every model receives the same compact fight-state format, the same 15
-legal actions, and one typed decision question every 300ms. This makes
-model behavior directly comparable:
+Every 300ms, Fight turns the current on-screen bout into compact model
+input: stage and score, fighter spacing and range, stances, airborne and
+attack state, freedom to act, wall position, and the model's previous
+move. Every model receives that same live in-game state format, the same
+15 legal actions, and one typed decision question. This makes model
+behavior directly comparable:
 
 - **Fixed contract** — swap models without changing the game or prompt.
 - **Live telemetry** — inspect choice, confidence, probability
