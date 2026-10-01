@@ -30,8 +30,9 @@ ollama pull nimble:latest
 
 Any model that supports structured output works; the decision models
 (`nimble` from Bespoke Labs, `tev1` and `tev1:0.8b` from Together AI)
-are the best fit on Ollama 0.35+. `nimble:latest` (9B,
-Q8_0) is what this setup was tested with.
+are the best fit on Ollama 0.35+. `nimble:latest` (9B, Q8_0) is the
+gameplay reference model; all three have been tested with the fixed-state
+benchmark below.
 
 ## Starting the server
 
@@ -187,7 +188,17 @@ the `duration` field. Note the first decision after a cold load spikes
 ## Model comparison
 
 `benchmark.js` exercises the same state/question contract without
-requiring browser automation:
+requiring browser automation. It requires Ollama 0.35+ because it calls
+the native `/v1/systemone` endpoint directly. Pull the compared models
+once:
+
+```
+ollama pull nimble:latest
+ollama pull tev1:latest
+ollama pull tev1:0.8b
+```
+
+Then run:
 
 ```
 node benchmark.js nimble:latest tev1:latest tev1:0.8b

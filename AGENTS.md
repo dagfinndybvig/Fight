@@ -25,7 +25,7 @@ OLLAMA.md    — local Ollama AI setup guide
 ## Running and testing
 
 - No build step, no npm dependencies, no external assets. Node
-  built-ins only in `server.js`.
+  built-ins only in `server.js` and `benchmark.js`.
 - Run `node server.js`, open http://localhost:3000. Opening
   `index.html` as `file://` works for manual play but the AI cannot
   (CORS) — always test AI behavior through the server.
@@ -95,6 +95,8 @@ buildState() → text → POST /jev → {choice, confidence, probabilities}
   shape. `server.js` accepts both shapes in chat mode; keep it that
   way. An array criteria caused a real bug once (HTTP 400 → permanent
   fallback).
+- **Chat fallback is verified** — the adapter passed an end-to-end run
+  on the official Ollama 0.34.2 Windows build with `qwen2.5:3b`.
 - **The game ignores response bodies** — on `!resp.ok` it throws
   `HTTP <status>`, so the log panel shows `HTTP 502`, never the server's
   `ollama_error` detail. Check the server console for the real error.

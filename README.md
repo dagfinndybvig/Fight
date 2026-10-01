@@ -169,7 +169,7 @@ bench for Jev-style decision models:
   goes red while it does. The local proxy enforces the same 3s deadline
   and cancels backend work when the browser disconnects.
 
-For a repeatable fixed-state comparison, run:
+For a repeatable fixed-state comparison on Ollama 0.35+, run:
 
 ```
 node benchmark.js nimble:latest tev1:latest tev1:0.8b
