@@ -64,6 +64,9 @@ buildState() → text → POST /jev → {choice, confidence, probabilities}
              → temperature sample (1.6-2.4) → button combo → fighter moves
 ```
 
+- After backend choice, `guardRepeatedHighKick()` may replace the button
+  combo with a short block against a repeated straight high kick. This
+  backend-neutral gameplay reflex is not part of `benchmark.js`.
 - The game sends a Jev System One request:
   `{model:"jev-latest", state, questions:{action:{type:"choice",
   instructions, criteria}}}`.

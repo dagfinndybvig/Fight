@@ -110,6 +110,15 @@ In both modes the server warms the model at startup so the first poll
 is not a cold load (a cold load can take tens of seconds and would
 cause early fallbacks).
 
+Fight also has one backend-neutral, game-side defensive reflex. From
+the second consecutive straight high kick in a bout, a free grounded
+opponent in range gets one startup block check (45% at stage 1, scaling
+to 80% at stage 4). The kick's 0.10s startup is shorter than the 300ms
+model poll, so this prevents a timing exploit equally for Ollama,
+TypeSafe, and heuristic control. The first kick and mixed combinations
+remain under normal model control. `benchmark.js` calls the decision
+endpoint directly and therefore does not include this gameplay guard.
+
 No changes to `game.js` are needed — the game cannot tell the
 difference between Jev and the local backend.
 

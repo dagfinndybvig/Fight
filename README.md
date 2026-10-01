@@ -30,6 +30,10 @@ behavior directly comparable:
   different fighting styles.
 - **Strict fallback** — confidence below 0.3, latency above 3s, or any
   error visibly hands control to the same built-in heuristic.
+- **Shared kick guard** — after a fighter repeats the straight high
+  kick, a free grounded opponent gets one stage-scaled chance to block
+  its 0.10s startup. This game-side reflex is identical for every
+  backend and does not affect the fixed-state model benchmark.
 
 ### Measured model comparison
 
@@ -264,6 +268,7 @@ and the distribution Jev returned. In the browser console,
       the **L** panel
 - [x] Decision-model test harness framing: model swapping, per-decision
       telemetry, self-play, strict visible fallback
+- [x] Backend-neutral anti-spam guard for repeated straight high kicks
 - [x] Measured latency documented (~100-130ms warm, native mode)
 - [x] Audit hardening: loopback binding, static-route allowlist, request
       size limits, bounded/cancelled backend polls, `https://` `OLLAMA_HOST`
