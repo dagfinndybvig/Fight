@@ -132,7 +132,7 @@ at startup so the first poll is not a cold load. `OLLAMA_HOST`
 (default `http://localhost:11434`) points at a different Ollama
 instance.
 
-**With Jev AI (verified working):** the TypeSafe API does not send CORS
+**With TypeSafe Jev API:** the TypeSafe API does not send CORS
 headers, so browser-to-API calls are blocked. A zero-dependency Node.js
 proxy server is included. Run it locally:
 
