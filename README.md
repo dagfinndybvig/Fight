@@ -166,7 +166,8 @@ bench for Jev-style decision models:
 - **Strict, visible fallback** — under 0.3 confidence, over 3s, or on
   any error the fighter switches to the built-in heuristic. A weak
   model doesn't freeze the loop; it just fights worse — and the HUD
-  goes red while it does.
+  goes red while it does. The local proxy enforces the same 3s deadline
+  and cancels backend work when the browser disconnects.
 
 Measured on the reference machine (nimble 9B, Q8_0, native mode):
 ~100–130ms per decision warm — inside the 300ms loop, so the AI
@@ -195,7 +196,8 @@ Every 300ms, for each Jev-driven fighter:
    as if a key had been pressed.
 6. **Fallback** — if confidence is below 0.3, the API times out (3s), or
    errors, the fighter switches to the built-in heuristic AI until Jev
-   responds again.
+   responds again. The proxy also stops backend requests after 3s or
+   when the browser abandons the poll.
 
 ```
 game state → text → POST /jev → choice + probabilities + confidence
@@ -234,8 +236,10 @@ and the distribution Jev returned. In the browser console,
 - [x] Decision-model test harness framing: model swapping, per-decision
       telemetry, self-play, strict visible fallback
 - [x] Measured latency documented (~100-130ms warm, native mode)
-- [x] Audit hardening: loopback binding, path-traversal checks, `https://`
-      `OLLAMA_HOST`, Unlicense
+- [x] Audit hardening: loopback binding, static-route allowlist, request
+      size limits, bounded/cancelled backend polls, `https://` `OLLAMA_HOST`
+- [x] Gameplay audit fixes: functional blocking, exact stage difficulty
+      scaling, symmetric autoplay resets, and one-key bout restart
 
 Open items:
 

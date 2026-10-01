@@ -38,6 +38,7 @@ const OLLAMA_URL = new URL(OLLAMA_HOST);
 // not exposed to the LAN. Set HOST=0.0.0.0 to serve the network.
 const HOST = process.env.HOST || "127.0.0.1";
 const MAX_BODY_BYTES = 64 * 1024;
+const UPSTREAM_TIMEOUT_MS = 3000;
 
 const MIME = {
   ".html": "text/html",
@@ -60,6 +61,29 @@ const STATIC_FILES = new Map([
 function sendJson(res, status, body) {
   res.writeHead(status, { "Content-Type": "application/json" });
   res.end(JSON.stringify(body));
+}
+
+function sendUpstreamError(res, error, detail) {
+  if (res.destroyed || res.writableEnded) return;
+  if (res.headersSent) {
+    res.destroy();
+    return;
+  }
+  sendJson(res, 502, { error, detail });
+}
+
+function bindUpstream(res, upstream) {
+  const abort = () => {
+    if (!res.writableEnded) upstream.destroy();
+  };
+  const timeout = setTimeout(() => {
+    upstream.destroy(new Error("upstream timed out after 3 seconds"));
+  }, UPSTREAM_TIMEOUT_MS);
+  res.once("close", abort);
+  upstream.once("close", () => {
+    clearTimeout(timeout);
+    res.off("close", abort);
+  });
 }
 
 function readBody(req, res, onBody) {
@@ -150,9 +174,9 @@ function proxyJev(req, res) {
         up.pipe(res);
       }
     );
+    bindUpstream(res, upstream);
     upstream.on("error", (e) => {
-      res.writeHead(502, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ error: "proxy_error", detail: String(e.message) }));
+      sendUpstreamError(res, "proxy_error", String(e.message));
     });
     upstream.end(body);
   });
@@ -269,9 +293,9 @@ function handleJevOllama(req, res) {
       });
       up.pipe(res);
     });
+    bindUpstream(res, upstream);
     upstream.on("error", (e) => {
-      res.writeHead(502, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ error: "ollama_error", detail: String(e.message) }));
+      sendUpstreamError(res, "ollama_error", String(e.message));
     });
   });
 }
@@ -371,9 +395,9 @@ function chatAdapted(jevReq, res) {
         });
       }
     );
+    bindUpstream(res, upstream);
     upstream.on("error", (e) => {
-      res.writeHead(502, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ error: "ollama_error", detail: String(e.message) }));
+      sendUpstreamError(res, "ollama_error", String(e.message));
     });
 }
 

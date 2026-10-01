@@ -143,7 +143,8 @@ driven by [Jev](https://www.typesafe.ai):
 - **Model**: `jev-latest`
 - **Poll interval**: ~300ms
 - **Fetch timeout**: 3s via `AbortController`; on timeout or error, falls
-  back to the local heuristic instead of freezing.
+  back to the local heuristic instead of freezing. The proxy applies the
+  same timeout and cancels the backend request if the browser disconnects.
 - **Confidence floor**: 0.3 — below this, falls back to local heuristic.
 - **Question type**: `Choice` with 15 options (approach, retreat, block,
   jump, punch_high, punch_low, elbow, kick_high, kick_low, sweep, roundhouse,
@@ -354,7 +355,8 @@ title -> fighting -> roundPause -> nextOrEnd()
 ```
 
 In autoplay mode, the bonus round is skipped — clearing stage 2 goes
-straight to stage clear.
+straight to stage clear. Enter or Space on `gameover` or `champion`
+starts a fresh stage-1 bout directly.
 
 ### Constants
 

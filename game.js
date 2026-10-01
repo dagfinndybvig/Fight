@@ -581,6 +581,7 @@ function updateFighter(f, opp, dt, aiCtl){
     const holdingAway = (f.facing>0 && ml && !mr) || (f.facing<0 && mr && !ml);
     if(holdingAway && down && !punch && !kick && !up){
       f.state="block";
+      f.crouching=false;
       dir = 0;
     } else if(dir!==0 && !down){
       const oldX = f.x;
@@ -1108,7 +1109,8 @@ function drawHUD(p1,p2,stage){
 // ============================================================
 function aiControl(f, opp, stage, dt){
   // difficulty scales per stage
-  const react = clamp(0.52 - stage*0.08, 0.16, 0.52);
+  const stageT = (clamp(stage, 1, 4) - 1) / 3;
+  const react = lerp(0.52, 0.16, stageT);
   f.ai = f.ai || { t:0, act:{}, blockTimer:0 };
   const a=f.ai; a.t-=dt;
   const d = Math.abs(opp.x - f.x);
@@ -1122,8 +1124,8 @@ function aiControl(f, opp, stage, dt){
   const oppAttacking = (opp.state==="attack");
   const inRange = d < 92;
   const close = d < 60;
-  const blockChance = clamp(0.18 + stage*0.12, 0.18, 0.6);
-  const aggro = clamp(0.3 + stage*0.15, 0.3, 0.95);
+  const blockChance = lerp(0.18, 0.60, stageT);
+  const aggro = lerp(0.30, 0.95, stageT);
   const toward = opp.x >= f.x ? "right" : "left";
   const away = toward==="right" ? "left":"right";
 
@@ -1410,7 +1412,7 @@ function nextOrEnd(){
     mode="gameover"; Sound.stopMusic(); Sound.lose();
   } else {
     // continue same bout: reset positions/poses, keep scores
-    p1.x=300; p1.y=GROUND_Y; p1.vy=0; p1.move=null; p1.busy=false; p1.state="idle"; p1.stun=0; p1.pose=clonePose(POSES.IDLE);
+    p1.x=300; p1.y=GROUND_Y; p1.vy=0; p1.move=null; p1.busy=false; p1.state="idle"; p1.stun=0; p1.pose=clonePose(POSES.IDLE); p1.ai=null;
     p2.x=660; p2.y=GROUND_Y; p2.vy=0; p2.move=null; p2.busy=false; p2.state="idle"; p2.stun=0; p2.pose=clonePose(POSES.IDLE); p2.ai=null;
     JevAI.reset();
     mode="fighting";
@@ -1424,8 +1426,7 @@ let last=performance.now();
 function loop(now){
   let dt=(now-last)/1000; last=now; dt=Math.min(dt,0.033);
   if(kPress("start") && (mode==="title"||mode==="gameover"||mode==="champion")){
-    if(mode==="title") startStage(1);
-    else startGame();
+    startStage(1);
   }
   if(Pressed["KeyP"] && mode==="fighting"){ pause=!pause; }
 

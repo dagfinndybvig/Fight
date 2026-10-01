@@ -95,6 +95,9 @@ buildState() → text → POST /jev → {choice, confidence, probabilities}
 - **Fallback triggers**: poll exceeds 3s (`AbortController`), HTTP != 2xx,
   or confidence < 0.3 (`CONFIDENCE_FLOOR`, `game.js:196`). The fighter
   then uses the built-in heuristic (`aiControl()`) until a poll succeeds.
+- **Server-side polls are bounded too**: backend requests time out after
+  3s and are destroyed when the browser disconnects, so abandoned polls
+  do not queue inference or hold sockets.
 - **Ollama unloads models after ~5 minutes idle** — first polls after a
   pause hit a cold load (~27s for nimble:latest) and time out. The game
   recovers automatically; `server.js` warms the model at startup.

@@ -166,12 +166,13 @@ game's 300ms poll spacing:
 | First poll after an idle pause | ~300ms |
 | Back-to-back requests (no spacing) | ~390ms — Ollama queues them |
 
-All are far inside the game's 3s timeout. The warm figure matches
-Ollama's published ~91ms for nimble on an M5 Max, and is below the
-300ms poll interval — so the AI re-decides at the game's full cadence
-with fresh state every tick. This is why local play feels more
-reactive than the cloud API, where the network round trip pushes
-latency beyond the poll interval.
+All are far inside the 3s deadline enforced by both the browser and
+local proxy. The proxy also cancels Ollama work when the browser
+disconnects. The warm figure matches Ollama's published ~91ms for
+nimble on an M5 Max, and is below the 300ms poll interval — so the AI
+re-decides at the game's full cadence with fresh state every tick. This
+is why local play feels more reactive than the cloud API, where the
+network round trip pushes latency beyond the poll interval.
 
 Your own numbers are visible in-game: press **L** and read the latency
 column (ms per decision), or export with `window.jevLog()` and average
@@ -198,8 +199,9 @@ the `duration` field. Note the first decision after a cold load spikes
   the game recovers automatically once the model is loaded again.
 - **Slow polls** — smaller models (or a lower quantization) respond
   faster. The game falls back to its built-in heuristic AI whenever a
-  poll exceeds 3 seconds, so an overloaded machine degrades gracefully
-  rather than freezing the fight.
+  poll exceeds 3 seconds; the proxy terminates the matching Ollama
+  request instead of leaving inference queued. An overloaded machine
+  therefore degrades gracefully rather than freezing the fight.
 - **Repetitive play** — variety comes from the synthesized probability
   distribution plus the game's temperature sampling. If the model always
   picks the same move, the sampling still varies it, but you can also
