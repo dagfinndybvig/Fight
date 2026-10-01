@@ -9,7 +9,54 @@ Win all four stages to become the master.
 It can be played with TypeSafe Jev if you have an API key, with a Jev-like local model via [Ollama](https://ollama.com) (no API key needed — see [OLLAMA.md](OLLAMA.md)), or online without any advanced AI just to get an impression:
 https://dagfinndybvig.github.io/Fight/
 
-Interestingly Jev offers a more varied gameplay than the deterministic autoplay, so the payoff is clearly visible. The game also doubles as a small test harness for Jev-style decision models — see [A test harness for decision models](#a-test-harness-for-decision-models).
+Jev offers visibly more varied play than deterministic autoplay. More
+importantly, the fight is a live, observable test harness for Jev-style
+decision models rather than only a game.
+
+## Decision-model test harness
+
+Every model receives the same compact fight-state format, the same 15
+legal actions, and one typed decision question every 300ms. This makes
+model behavior directly comparable:
+
+- **Fixed contract** — swap models without changing the game or prompt.
+- **Live telemetry** — inspect choice, confidence, probability
+  distribution, fallback status, and latency with **L** or
+  `window.jevLog()`.
+- **Self-play** — autoplay runs two independent model instances with
+  different fighting styles.
+- **Strict fallback** — confidence below 0.3, latency above 3s, or any
+  error visibly hands control to the same built-in heuristic.
+
+### Measured model comparison
+
+Each model handled the same 16 situations across all four stages three
+times after warm-up:
+
+| Model | Mean latency | Mean confidence | Game fallback | Unique moves |
+| --- | ---: | ---: | ---: | ---: |
+| `nimble:latest` | 147ms | 0.573 | 0.0% | 6 |
+| `tev1:latest` | 145ms | 0.627 | 0.0% | 5 |
+| `tev1:0.8b` | 86ms | 0.433 | 18.8% | 5 |
+
+**Takeaway:** full-size `tev1` produced the highest mean confidence and
+matched nimble's latency; nimble produced slightly more move variety.
+`tev1:0.8b` was much faster, but nearly one decision in five fell below
+Fight's confidence floor and triggered heuristic fallback. These are
+controlled decision-state results, not full-bout win rates.
+
+Reproduce the comparison on Ollama 0.35+:
+
+```
+node benchmark.js nimble:latest tev1:latest tev1:0.8b
+```
+
+The zero-dependency benchmark reports warm latency percentiles,
+confidence, fallback causes, errors, and move diversity. See
+[OLLAMA.md](OLLAMA.md#model-comparison) for the full protocol and
+detailed results.
+
+## Playing
 
 ### Controls
 
@@ -147,44 +194,6 @@ Which backend is playing, and how to get it:
 | Built-in heuristic | (AI: local heuristic) | Nothing needed — this is also the automatic fallback |
 
 Precedence: `OLLAMA_MODEL` > `TYPESAFE_API_KEY` > auto-detected Ollama model. With Ollama 0.35+, decisions come from Ollama's native Jev-style `/v1/systemone` endpoint (real probability distributions); older versions use a chat adapter. The HUD label names the active backend so you always know who is playing.
-
-### A test harness for decision models
-
-The fight is a repeatable decision loop: same state format, the same 15
-options, one typed question every 300ms — which makes the game a small
-bench for Jev-style decision models:
-
-- **Swap models** — set `OLLAMA_MODEL` to compare nimble, `tev1`, or
-  `tev1:0.8b` on identical situations; the HUD names the model, Ollama
-  version, and decision mode in play.
-- **Per-decision telemetry** — press **L** for each fighter's choice,
-  confidence, the full probability distribution, and poll latency;
-  `window.jevLog()` exports the last 200 decisions as data.
-- **Self-play** — autoplay pits the active backend against itself
-  (two independent instances, different fighting styles). Equal models
-  produce even bouts; a mismatch shows within one round.
-- **Strict, visible fallback** — under 0.3 confidence, over 3s, or on
-  any error the fighter switches to the built-in heuristic. A weak
-  model doesn't freeze the loop; it just fights worse — and the HUD
-  goes red while it does. The local proxy enforces the same 3s deadline
-  and cancels backend work when the browser disconnects.
-
-For a repeatable fixed-state comparison on Ollama 0.35+, run:
-
-```
-node benchmark.js nimble:latest tev1:latest tev1:0.8b
-```
-
-The benchmark sends the same 16 situations (four per stage) to every
-model three times, after an unmeasured warm-up. It reports warm latency,
-confidence, game fallback rate, errors, and move diversity. See
-[OLLAMA.md](OLLAMA.md#model-comparison) for the measured results and
-protocol.
-
-Measured on the reference machine (nimble 9B, Q8_0, native mode):
-~100–130ms per decision warm — inside the 300ms loop, so the AI
-re-decides at the game's full cadence. Details in
-[OLLAMA.md](OLLAMA.md).
 
 ## How it works
 
