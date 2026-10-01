@@ -21,7 +21,7 @@ No health bar. Every connecting technique ends the round:
 
 | Outcome | Score | Condition |
 | --- | --- | --- |
-| Ippon | 1.0 | Well-timed, decisive hit (`fdist <= reach * 0.55`) or an `alwaysIppon` move |
+| Ippon | 1.0 | Hit in the inner 60% of the move's valid contact window, or an `alwaysIppon` move |
 | Waza-ari | 0.5 | Glancing hit, or 0.5 to each fighter on a simultaneous trade |
 | No connection | 0 | Blocked hit — round continues |
 
@@ -35,10 +35,13 @@ and advances.
 1. **Horizontal**: `fdist` (attacker-facing distance) must be in `[30, reach + 8]`.
 2. **Vertical**: attacker hitbox `hb` must overlap the defender body box (`dH = 110` standing, `60` crouching).
 3. **Block**: if defender is in block state, the hit is negated — attacker gets stunned.
-4. **Scoring**: simultaneous trades give both fighters 0.5; `alwaysIppon`
-   moves always give 1.0; otherwise scoring is based on spacing. If both
-   fighters reach 2.0 on the same trade, the tied bout continues until
-   one fighter leads.
+4. **Scoring**: the clean-hit cutoff is
+   `30 + ((reach + 8) - 30) * 0.60`, so every move can score at the
+   game's 44px minimum fighter spacing. Contacts beyond that cutoff are
+   glancing waza-ari. Simultaneous connecting attacks give both fighters
+   0.5 even if one move would otherwise be ippon; merely being in an
+   attack phase does not reduce the opponent's score. If both fighters
+   reach 2.0 on the same trade, the tied bout continues until one leads.
 
 ## Move set
 

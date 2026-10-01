@@ -2,7 +2,7 @@
 
 # Fight
 Inspired by *The Way of the Exploding Fist* (1985): a one-on-one karate
-bout with yin-yang scoring. No health bar — a clean hit ends the round.
+bout with yin-yang scoring. No health bar — a connecting hit ends the round.
 First to two full yin-yangs with the lead wins the bout and advances to a harder stage.
 Win all four stages to become the master.
 
@@ -64,6 +64,14 @@ confidence, fallback causes, errors, and move diversity. See
 detailed results.
 
 ## Playing
+
+### Scoring
+
+A hit in the inner 60% of a move's valid contact window scores an ippon
+(1.0); a farther, glancing hit scores a waza-ari (0.5). Elbows and
+sweeps always score ippon unless both fighters connect simultaneously,
+in which case each receives 0.5. Blocks score nothing and the round
+continues. First to 2.0 with the lead wins the bout.
 
 ### Controls
 
@@ -273,7 +281,8 @@ and the distribution Jev returned. In the browser console,
 - [x] Audit hardening: loopback binding, static-route allowlist, request
       size limits, bounded/cancelled backend polls, `https://` `OLLAMA_HOST`
 - [x] Gameplay audit fixes: functional blocking, exact stage difficulty
-      scaling, symmetric autoplay resets, and one-key bout restart
+      scaling, symmetric autoplay resets, one-key bout restart, reachable
+      clean-hit scoring, and true simultaneous-trade detection
 - [x] Fixed-state model benchmark: nimble vs `tev1` vs `tev1:0.8b`
 - [x] Chat-adapter fallback verified end to end on Ollama 0.34.2
 - [x] CRLF policy enforced for tracked source and documentation

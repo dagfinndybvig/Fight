@@ -19,6 +19,9 @@ const JUMP_VEL = 660;
 const WALK = 168;
 const BODY_HALF = 16;             // half-width used for contact
 const POINTS_TO_WIN = 2.0;        // two full yin-yangs win the bout
+const HIT_MIN_DISTANCE = 30;
+const HIT_REACH_GRACE = 8;
+const CLEAN_HIT_WINDOW = 0.60;    // inner share of a move's valid contact range
 
 // ---- Move definitions ----
 // dur: [startup, active, recovery] in seconds
@@ -651,7 +654,7 @@ function resolveHit(atk, def){
   const by0=def.y-dH, by1=def.y-6;   // top of head to just below waist
   // horizontal
   const fdist = atk.facing*(def.x-atk.x);
-  if(fdist < 30 || fdist > m.reach+8) return null;   // tighter range window
+  if(fdist < HIT_MIN_DISTANCE || fdist > m.reach+HIT_REACH_GRACE) return null;
   // vertical overlap
   if(!(y0 < by1 && y1 > by0)) return null;
   atk.move.spent = true;
@@ -661,11 +664,12 @@ function resolveHit(atk, def){
     return { type:"block" };
   }
   // connection -> ippon or waza-ari
+  const cleanLimit = HIT_MIN_DISTANCE +
+    (m.reach + HIT_REACH_GRACE - HIT_MIN_DISTANCE) * CLEAN_HIT_WINDOW;
   let pts;
-  if(def.state==="attack") pts=0.5;        // trade
-  else if(m.alwaysIppon) pts=1.0;          // certain moves always ippon
-  else if(fdist <= m.reach*0.55) pts=1.0;  // clean / well-timed
-  else pts=0.5;                           // glancing
+  if(m.alwaysIppon) pts=1.0;               // certain moves always ippon
+  else if(fdist <= cleanLimit) pts=1.0;     // inner contact range: decisive
+  else pts=0.5;                             // outer contact range: glancing
   return { type:"hit", pts };
 }
 

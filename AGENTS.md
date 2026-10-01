@@ -149,10 +149,11 @@ buildState() → text → POST /jev → {choice, confidence, probabilities}
 
 ## Game mechanics essentials
 
-- **Scoring**: ippon 1.0 (decisive hit: `fdist <= reach * 0.55`, or an
-  `alwaysIppon` move — elbow, sweep), waza-ari 0.5 (glancing; both
-  fighters receive 0.5 on a simultaneous trade), blocked hits score
-  nothing and stun the attacker. First to 2.0 with the lead wins.
+- **Scoring**: ippon 1.0 (inner 60% of the valid `[30, reach + 8]`
+  contact window, or an `alwaysIppon` move — elbow, sweep), waza-ari
+  0.5 (outer 40%; both fighters receive 0.5 on a simultaneous connecting
+  trade), blocked hits score nothing and stun the attacker. Merely being
+  in an attack phase is not a trade. First to 2.0 with the lead wins.
 - **Block is a held state** (back + down), not a move. Blocked hits
   negate and stun the attacker.
 - **Moves** are defined by startup/active/recovery frames, reach, and
