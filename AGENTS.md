@@ -57,7 +57,7 @@ OLLAMA.md    — local Ollama AI setup guide
 
 ## AI pipeline
 
-Every 300ms (`POLL_MS`, `game.js:195`), for each AI-driven fighter:
+Every 300ms (`POLL_MS` in `game.js`), for each AI-driven fighter:
 
 ```
 buildState() → text → POST /jev → {choice, confidence, probabilities}
@@ -104,7 +104,7 @@ buildState() → text → POST /jev → {choice, confidence, probabilities}
   `HTTP <status>`, so the log panel shows `HTTP 502`, never the server's
   `ollama_error` detail. Check the server console for the real error.
 - **Fallback triggers**: poll exceeds 3s (`AbortController`), HTTP != 2xx,
-  or confidence < 0.3 (`CONFIDENCE_FLOOR`, `game.js:196`). The fighter
+  or confidence < 0.3 (`CONFIDENCE_FLOOR` in `game.js`). The fighter
   then uses the built-in heuristic (`aiControl()`) until a poll succeeds.
 - **Server-side polls are bounded too**: backend requests time out after
   3s and are destroyed when the browser disconnects, so abandoned polls
