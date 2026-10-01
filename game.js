@@ -241,6 +241,8 @@ const JevAI = (()=>{
   function create(id, styles){
     let pollTimer = 0;
     let inflight = false;
+    let requestController = null;
+    let generation = 0;
     let lastChoice = null;
     let useFallback = false;
     let status = "idle";
@@ -314,6 +316,7 @@ const JevAI = (()=>{
         }
       };
       const ctrl = new AbortController();
+      requestController = ctrl;
       const timeout = setTimeout(()=>ctrl.abort(), 3000);
       const t0 = performance.now();  // poll latency, logged per decision
       let resp;
@@ -331,6 +334,7 @@ const JevAI = (()=>{
         throw new Error(e.name==="AbortError" ? "timeout" : "network");
       } finally {
         clearTimeout(timeout);
+        if(requestController === ctrl) requestController = null;
       }
       if(!resp.ok) throw new Error("HTTP " + resp.status);
       const data = await resp.json();
@@ -363,8 +367,10 @@ const JevAI = (()=>{
       }
       pollTimer = 0;
       inflight = true;
+      const requestGeneration = generation;
       // keep showing "active" during fetch — no yellow flicker
       query(ai, opp, stage).then(res=>{
+        if(requestGeneration !== generation) return;
         inflight = false;
         if(res.confidence < CONFIDENCE_FLOOR){
           status = "fallback";
@@ -399,6 +405,7 @@ const JevAI = (()=>{
           addLog({ t: Date.now(), id, stage, ok: true, choice: picked, jevChoice: res.choice, confidence: res.confidence, state: res.state, probabilities: res.probabilities, duration: res.duration });
         }
       }).catch(err=>{
+        if(requestGeneration !== generation) return;
         inflight = false;
         status = "fallback";
         const msg = String(err.message || err);
@@ -416,7 +423,12 @@ const JevAI = (()=>{
     return {
       tick,
       getStatus(){ return { status, detail: statusDetail }; },
-      reset(){ pollTimer=0; inflight=false; lastChoice=null; useFallback=false; status="idle"; statusDetail=""; styleIdx=0; styleTimer=0; styleSwapIn=2+Math.random()*3; },
+      reset(){
+        generation++;
+        if(requestController) requestController.abort();
+        requestController=null; pollTimer=0; inflight=false; lastChoice=null; useFallback=false;
+        status="idle"; statusDetail=""; styleIdx=0; styleTimer=0; styleSwapIn=2+Math.random()*3;
+      },
     };
   }
 
@@ -1155,13 +1167,14 @@ let showJevLog = false;
 let autoplay = false;
 let bull = null;   // bonus round bull object
 let senseiBubble = 0;   // "Fight!" speech bubble timer (seconds)
-function resetBout(){
+function resetBout(p1Score=0){
   p1 = makeFighter(300, 1, false); p1.name="YOU";
+  p1.score = p1Score;
   p2 = makeFighter(660,-1, true);  p2.name="AI";
   timer=0; msg=""; msgSub="";
 }
-function startStage(s){
-  stage=s; resetBout(); mode="fighting"; JevAI.reset();
+function startStage(s, p1Score=0){
+  stage=s; resetBout(p1Score); mode="fighting"; JevAI.reset();
   senseiBubble = 2.0;   // sensei says "Fight!" at the start of each stage
   Sound.startMusic();
 }
@@ -1197,8 +1210,9 @@ function updateBonus(dt){
   if(mode === "bonusResult"){
     timer -= dt;
     if(timer <= 0){
+      const bonusScore = bull && bull.scored ? 0.5 : 0;
       bull = null;
-      startStage(stage + 1);
+      startStage(stage + 1, bonusScore);
     }
     return;
   }
@@ -1231,7 +1245,6 @@ function updateBonus(dt){
       timer = 2.5;
       msg = "BULL DOWN!";
       msgSub = "Mas Oyama would be proud. Bonus yin-yang awarded.";
-      p1.score += 0.5; // bonus half-point toward next bout
       Sound.win();
       return;
     }
@@ -1377,12 +1390,23 @@ function endRound(winner, award, label){
     loser.x = clamp(loser.x+dir*10, ARENA_L, ARENA_R);
   }
 }
+function endTrade(){
+  mode="roundPause"; timer=1.4; msg="DOUBLE WAZA-ARI";
+  for(const fighter of [p1,p2]){
+    fighter.score += 0.5;
+    fighter.flash=0.2; fighter.state="hit"; fighter.stun=0.5;
+    fighter.move=null; fighter.busy=false;
+  }
+  Sound.point();
+}
 function nextOrEnd(){
-  if(p1.score>=POINTS_TO_WIN){
+  const p1Wins = p1.score>=POINTS_TO_WIN && p1.score>p2.score;
+  const p2Wins = p2.score>=POINTS_TO_WIN && p2.score>p1.score;
+  if(p1Wins){
     if(stage>=4){ mode="champion"; Sound.stopMusic(); Sound.win(); }
     else if(stage===2 && !autoplay){ startBonus(); }
     else { mode="stageClear"; timer=1.8; msg="STAGE CLEAR"; Sound.win(); }
-  } else if(p2.score>=POINTS_TO_WIN){
+  } else if(p2Wins){
     mode="gameover"; Sound.stopMusic(); Sound.lose();
   } else {
     // continue same bout: reset positions/poses, keep scores
@@ -1452,18 +1476,16 @@ function update(dt){
   // body collision: keep fighters from overlapping
   separateFighters(p1, p2);
 
-  // hit resolution: attacker's active frames
-  checkHit(p1,p2); checkHit(p2,p1);
+  // Resolve both attacks from the same frame before changing round state.
+  checkHits();
 
   // blend poses
   blendPose(p1, poseFor(p1), dt);
   blendPose(p2, poseFor(p2), dt);
 }
 
-function checkHit(atk,def){
+function applyHit(atk,def,r){
   if(mode!=="fighting") return;
-  const r=resolveHit(atk,def);
-  if(!r) return;
   if(r.type==="block"){
     atk.move=null; atk.busy=false; atk.stun=0.22; atk.state="hit"; atk.flash=0.15;
     def.stun=0.12; Sound.block();
@@ -1476,6 +1498,17 @@ function checkHit(atk,def){
   const label = pts>=1 ? "IPPON!" : "WAZA-ARI";
   atk.move=null; atk.busy=false;
   endRound(winner, pts, label);
+}
+function checkHits(){
+  if(mode!=="fighting") return;
+  const p1Result=resolveHit(p1,p2);
+  const p2Result=resolveHit(p2,p1);
+  if(p1Result && p1Result.type==="hit" && p2Result && p2Result.type==="hit"){
+    endTrade();
+    return;
+  }
+  if(p1Result) applyHit(p1,p2,p1Result);
+  if(mode==="fighting" && p2Result) applyHit(p2,p1,p2Result);
 }
 
 function draw(){

@@ -22,10 +22,11 @@ No health bar. Every connecting technique ends the round:
 | Outcome | Score | Condition |
 | --- | --- | --- |
 | Ippon | 1.0 | Well-timed, decisive hit (`fdist <= reach * 0.55`) or an `alwaysIppon` move |
-| Waza-ari | 0.5 | Glancing hit or simultaneous trade |
+| Waza-ari | 0.5 | Glancing hit, or 0.5 to each fighter on a simultaneous trade |
 | No connection | 0 | Blocked hit — round continues |
 
-First to **2.0 points** (two full yin-yangs) wins the bout and advances.
+First to **2.0 points** (two full yin-yangs) with the lead wins the bout
+and advances.
 
 ### Hit resolution
 
@@ -34,7 +35,10 @@ First to **2.0 points** (two full yin-yangs) wins the bout and advances.
 1. **Horizontal**: `fdist` (attacker-facing distance) must be in `[30, reach + 8]`.
 2. **Vertical**: attacker hitbox `hb` must overlap the defender body box (`dH = 110` standing, `60` crouching).
 3. **Block**: if defender is in block state, the hit is negated — attacker gets stunned.
-4. **Scoring**: trades always give 0.5; `alwaysIppon` moves always give 1.0; otherwise based on spacing.
+4. **Scoring**: simultaneous trades give both fighters 0.5; `alwaysIppon`
+   moves always give 1.0; otherwise scoring is based on spacing. If both
+   fighters reach 2.0 on the same trade, the tied bout continues until
+   one fighter leads.
 
 ## Move set
 

@@ -37,6 +37,7 @@ const OLLAMA_URL = new URL(OLLAMA_HOST);
 // Bind to loopback by default so the game and any injected API key are
 // not exposed to the LAN. Set HOST=0.0.0.0 to serve the network.
 const HOST = process.env.HOST || "127.0.0.1";
+const MAX_BODY_BYTES = 64 * 1024;
 
 const MIME = {
   ".html": "text/html",
@@ -49,10 +50,70 @@ const MIME = {
 };
 
 const ROOT = __dirname;
+const STATIC_FILES = new Map([
+  ["/", "index.html"],
+  ["/index.html", "index.html"],
+  ["/style.css", "style.css"],
+  ["/game.js", "game.js"],
+]);
+
+function sendJson(res, status, body) {
+  res.writeHead(status, { "Content-Type": "application/json" });
+  res.end(JSON.stringify(body));
+}
+
+function readBody(req, res, onBody) {
+  const chunks = [];
+  let size = 0;
+  let done = false;
+  req.on("data", (chunk) => {
+    if (done) return;
+    size += chunk.length;
+    if (size > MAX_BODY_BYTES) {
+      done = true;
+      chunks.length = 0;
+      sendJson(res, 413, { error: "payload_too_large", detail: "request body exceeds 64 KiB" });
+      return;
+    }
+    chunks.push(chunk);
+  });
+  req.on("end", () => {
+    if (!done) onBody(Buffer.concat(chunks));
+  });
+  req.on("error", (e) => {
+    if (done) return;
+    done = true;
+    sendJson(res, 400, { error: "bad_request", detail: String(e.message) });
+  });
+}
+
+function hasAllowedOrigin(req) {
+  const origin = req.headers.origin;
+  if (!origin) return true;
+  if (!req.headers.host) return false;
+  try {
+    return new URL(origin).origin === new URL("http://" + req.headers.host).origin;
+  } catch (e) {
+    return false;
+  }
+}
 
 function serveStatic(req, res) {
-  let url = req.url === "/" ? "/index.html" : req.url.split("?")[0];
-  const file = path.join(ROOT, path.normalize(url).replace(/^(\.\.[\/\\])+/, ""));
+  let pathname;
+  try {
+    pathname = decodeURIComponent(new URL(req.url, "http://localhost").pathname);
+  } catch (e) {
+    res.writeHead(400, { "Content-Type": "text/plain" });
+    res.end("400 Bad Request");
+    return;
+  }
+  const relative = STATIC_FILES.get(pathname);
+  if (!relative) {
+    res.writeHead(404, { "Content-Type": "text/plain" });
+    res.end("404 Not Found");
+    return;
+  }
+  const file = path.join(ROOT, relative);
   fs.readFile(file, (err, data) => {
     if (err) {
       res.writeHead(404, { "Content-Type": "text/plain" });
@@ -60,16 +121,17 @@ function serveStatic(req, res) {
       return;
     }
     const ext = path.extname(file).toLowerCase();
-    res.writeHead(200, { "Content-Type": MIME[ext] || "application/octet-stream" });
-    res.end(data);
+    res.writeHead(200, {
+      "Content-Type": MIME[ext] || "application/octet-stream",
+      "Content-Length": data.length,
+      "X-Content-Type-Options": "nosniff",
+    });
+    res.end(req.method === "HEAD" ? undefined : data);
   });
 }
 
 function proxyJev(req, res) {
-  const chunks = [];
-  req.on("data", (c) => chunks.push(c));
-  req.on("end", () => {
-    const body = Buffer.concat(chunks);
+  readBody(req, res, (body) => {
     const headers = {
       "Content-Type": "application/json",
       "Content-Length": Buffer.byteLength(body),
@@ -181,12 +243,10 @@ function autoDetectOllama() {
 // (Ollama 0.35+), or adapt it through a chat completion on older
 // versions. The first request probes which mode works.
 function handleJevOllama(req, res) {
-  const chunks = [];
-  req.on("data", (c) => chunks.push(c));
-  req.on("end", () => {
+  readBody(req, res, (rawBody) => {
     let jevReq;
     try {
-      jevReq = JSON.parse(Buffer.concat(chunks).toString("utf8"));
+      jevReq = JSON.parse(rawBody.toString("utf8"));
     } catch (e) {
       res.writeHead(400, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ error: "bad_request", detail: "invalid JSON" }));
@@ -352,6 +412,10 @@ function warmOllama() {
 
 const server = http.createServer((req, res) => {
   if (req.method === "POST" && req.url === "/jev") {
+    if (!hasAllowedOrigin(req)) {
+      sendJson(res, 403, { error: "forbidden_origin", detail: "POST /jev requires the same origin" });
+      return;
+    }
     if (OLLAMA_MODEL) return handleJevOllama(req, res);
     return proxyJev(req, res);
   }
@@ -365,8 +429,12 @@ const server = http.createServer((req, res) => {
     }));
     return;
   }
-  return serveStatic(req, res);
+  if (req.method === "GET" || req.method === "HEAD") return serveStatic(req, res);
+  res.writeHead(405, { "Content-Type": "text/plain", "Allow": "GET, HEAD, POST" });
+  res.end("405 Method Not Allowed");
 });
+server.requestTimeout = 10000;
+server.headersTimeout = 5000;
 
 server.listen(PORT, HOST, () => {
   console.log("The Way of the Exploding Fight");

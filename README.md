@@ -3,7 +3,7 @@
 # Fight
 Inspired by *The Way of the Exploding Fist* (1985): a one-on-one karate
 bout with yin-yang scoring. No health bar — a clean hit ends the round.
-First to two full yin-yangs wins the bout and advances to a harder stage.
+First to two full yin-yangs with the lead wins the bout and advances to a harder stage.
 Win all four stages to become the master.
 
 It can be played with TypeSafe Jev if you have an API key, with a Jev-like local model via [Ollama](https://ollama.com) (no API key needed — see [OLLAMA.md](OLLAMA.md)), or online without any advanced AI just to get an impression:
